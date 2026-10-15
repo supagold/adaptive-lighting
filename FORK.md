@@ -25,7 +25,7 @@ Keep this list exact. It's what to check when merging an upstream release.
 | File | Change |
 |---|---|
 | `custom_components/adaptive_lighting/switch.py` | Per-light step of `AdaptiveSwitch.prepare_adaptation_data` moved verbatim into module function `compute_light_service_data()` (pure, reused by the simulator). `Mapping` added to the `TYPE_CHECKING` imports. |
-| `custom_components/adaptive_lighting/manifest.json` | `version` → fork version. |
+| `custom_components/adaptive_lighting/manifest.json` | `version` → fork version; `ulid-transform` dropped from `requirements` (HA core ships it — `ulid-transform==2.2.9` in HA 2026.6.4 — and hassfest rejects listing it; upstream's own hassfest fails on this). |
 | `hacs.json` | `name` → "Adaptive Lighting (homeops fork)". |
 | `.github/workflows/pytest.yaml` | Runs on `homeops`; matrix = prod HA version, latest stable, `dev` (allowed to fail). |
 | `.github/workflows/hassfest.yaml`, `validate.yml` | Run on `homeops`; HACS validation allowed on this fork. |

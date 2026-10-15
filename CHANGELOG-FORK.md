@@ -1,6 +1,12 @@
 # Fork changelog
 
-## 1.32.0-homeops.1 (unreleased)
+## 1.32.0-homeops.2
+
+- Panel: 12-hour clock everywhere (hour axis, sun markers, the time readout).
+- Panel: a label beside the playhead dot shows the exact time at the playhead (to the minute,
+  also during playback).
+
+## 1.32.0-homeops.1 (released 2026-10-15)
 
 Based on upstream v1.32.0.
 

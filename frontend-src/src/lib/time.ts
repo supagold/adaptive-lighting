@@ -43,6 +43,23 @@ export function clockText(iso: string): string {
   return iso.slice(11, 16);
 }
 
+/** 12-hour wall-clock text of a local ISO timestamp: "8:35 PM", "12:00 AM". */
+export function clock12(iso: string): string {
+  const h = parseInt(iso.slice(11, 13), 10);
+  const m = iso.slice(14, 16);
+  return `${h % 12 || 12}:${m} ${h < 12 ? "AM" : "PM"}`;
+}
+
+/** Hour-axis label on a 12-hour scale: "6 AM", "12 PM"; `short` gives "6a", "12p". */
+export function hourLabel12(iso: string, short = false): string {
+  const h = parseInt(iso.slice(11, 13), 10);
+  const m = iso.slice(14, 16);
+  const hh = h % 12 || 12;
+  const ampm = h < 12 ? "AM" : "PM";
+  if (short) return `${hh}${m === "00" ? "" : ":" + m}${ampm[0].toLowerCase()}`;
+  return `${hh}${m === "00" ? "" : ":" + m} ${ampm}`;
+}
+
 /** Local ISO timestamp for `minute` on the curve's day, using the nearest sample's offset. */
 export function isoForMinute(samples: Sample[], minute: number): string {
   const i = nearestIndex(samples, minute);

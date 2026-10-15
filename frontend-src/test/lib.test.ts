@@ -236,3 +236,21 @@ describe("snap", () => {
     expect(snap(0.4)).toBe(0);
   });
 });
+
+import { clock12, hourLabel12 } from "../src/lib/time";
+describe("12-hour clock", () => {
+  it("formats playhead times", () => {
+    expect(clock12("2026-10-15T00:05:00-04:00")).toBe("12:05 AM");
+    expect(clock12("2026-10-15T09:00:00-04:00")).toBe("9:00 AM");
+    expect(clock12("2026-10-15T12:30:00-04:00")).toBe("12:30 PM");
+    expect(clock12("2026-10-15T20:20:00-04:00")).toBe("8:20 PM");
+    expect(clock12(isoForMinute(day.samples, 20 * 60 + 2))).toBe("8:02 PM");
+  });
+
+  it("labels hour ticks", () => {
+    expect(hourLabel12("2026-10-15T00:00:00-04:00")).toBe("12 AM");
+    expect(hourLabel12("2026-10-15T15:00:00-04:00")).toBe("3 PM");
+    expect(hourLabel12("2026-10-15T12:00:00-04:00", true)).toBe("12p");
+    expect(hourLabel12("2026-10-15T06:00:00-04:00", true)).toBe("6a");
+  });
+});

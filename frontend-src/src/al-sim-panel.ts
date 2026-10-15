@@ -9,7 +9,7 @@
 
 import { LitElement, css, html, nothing, svg, type PropertyValues } from "lit";
 import type { Curve, Errors, PerLight, Point, Profile } from "./lib/types";
-import { clockText, isoForMinute, minuteForX, nearestIndex, snap, totalMinutes, xForMinute } from "./lib/time";
+import { clock12, hourLabel12, isoForMinute, minuteForX, nearestIndex, snap, totalMinutes, xForMinute } from "./lib/time";
 import { brightnessPath, colorStops, hourTicks, yForPct, type ChartBox } from "./lib/chart";
 import { LatestThrottle, Playback } from "./lib/playback";
 import { buildPayload, changes, coerce, parseForm, savedValues, show, type Field, type Form } from "./lib/options";
@@ -383,6 +383,8 @@ export class AlSimPanel extends LitElement {
     const stops = colorStops(samples);
     const sun = Object.entries(this.curve?.sun ?? {});
     const dayStart = samples.length ? Date.parse(samples[0].t) : 0;
+    // Exact time at the playhead (not snapped to the 5-min samples), for the tooltip.
+    const playheadIso = samples.length ? isoForMinute(samples, Math.round(this.minute)) : "";
     return html`
       <svg
         class="chart"
@@ -393,7 +395,7 @@ export class AlSimPanel extends LitElement {
         aria-valuemin="0"
         aria-valuemax=${box.totalMinutes}
         aria-valuenow=${Math.round(this.minute)}
-        aria-valuetext=${cur ? clockText(cur.t) : ""}
+        aria-valuetext=${playheadIso ? clock12(playheadIso) : ""}
         @pointerdown=${this.onChartPointer}
         @pointermove=${this.onChartPointer}
         @keydown=${this.onChartKey}
@@ -411,7 +413,7 @@ export class AlSimPanel extends LitElement {
         ${hourTicks(box.totalMinutes, narrow ? 6 : 3).map(
           (m) => svg`
             <line class="grid" x1=${xForMinute(m, box)} x2=${xForMinute(m, box)} y1=${box.padTop} y2=${box.height - box.padBottom}></line>
-            <text class="axis" x=${xForMinute(m, box)} y=${box.height - box.padBottom + 14} text-anchor="middle">${samples.length ? clockText(samples[nearestIndex(samples, m)].t) : ""}</text>`,
+            <text class="axis" x=${xForMinute(m, box)} y=${box.height - box.padBottom + 14} text-anchor="middle">${samples.length ? hourLabel12(samples[nearestIndex(samples, m)].t, narrow) : ""}</text>`,
         )}
         ${sun.map(([name, iso]) => {
           const m = (Date.parse(iso) - dayStart) / 60_000;
@@ -419,7 +421,7 @@ export class AlSimPanel extends LitElement {
           const x = xForMinute(m, box);
           return svg`
             <line class="sun" x1=${x} x2=${x} y1=${box.padTop} y2=${box.height - box.padBottom}></line>
-            ${narrow && (name === "solar_noon" || name === "solar_midnight") ? nothing : svg`<text class="sunlabel" x=${x + 3} y=${box.padTop + 10}>${narrow ? "" : `${SUN_LABELS[name] ?? name} `}${clockText(iso)}</text>`}`;
+            ${narrow && (name === "solar_noon" || name === "solar_midnight") ? nothing : svg`<text class="sunlabel" x=${x + 3} y=${box.padTop + 10}>${narrow ? "" : `${SUN_LABELS[name] ?? name} `}${clock12(iso)}</text>`}`;
         })}
         <path class="line" d=${brightnessPath(samples, box)}></path>
         <rect x=${box.padLeft} y=${stripY} width=${box.width - box.padLeft - box.padRight} height=${STRIP_H} rx="3" fill="url(#ct)" opacity=${anyColour ? 1 : 0.25}></rect>
@@ -427,8 +429,25 @@ export class AlSimPanel extends LitElement {
         ${anyColour ? nothing : svg`<text class="axis" x=${box.padLeft + 8} y=${stripY + 13}>not used: these lights are dimmer-only</text>`}
         <line class="playhead" x1=${px} x2=${px} y1=${box.padTop} y2=${stripY + STRIP_H}></line>
         ${cur ? svg`<circle class="dot" cx=${px} cy=${yForPct(cur.brightness_pct, box)} r="6"></circle>` : nothing}
+        ${cur ? this.renderTip(clock12(playheadIso), px, yForPct(cur.brightness_pct, box), box) : nothing}
       </svg>
     `;
+  }
+
+  /** Time label beside the playhead dot: above it, or below when the dot is near the top. */
+  private renderTip(text: string, px: number, dotY: number, box: ChartBox) {
+    const w = text.length * 7.2 + 14;
+    const h = 22;
+    const minX = box.padLeft;
+    const maxX = box.width - box.padRight - w;
+    const x = Math.min(Math.max(px - w / 2, minX), maxX);
+    const above = dotY - 12 - h;
+    const y = above >= box.padTop + 14 ? above : dotY + 12;
+    return svg`
+      <g class="tip" pointer-events="none">
+        <rect x=${x} y=${y} width=${w} height=${h} rx="5"></rect>
+        <text x=${x + w / 2} y=${y + 15} text-anchor="middle">${text}</text>
+      </g>`;
   }
 
   // ------------------------------------------------------------- point view
@@ -439,7 +458,7 @@ export class AlSimPanel extends LitElement {
     const s = p.settings;
     return html`
       <div class="now">
-        <span class="time">${clockText(p.t)}</span>
+        <span class="time">${clock12(p.t)}</span>
         <span>${s.brightness_pct.toFixed(0)}% brightness</span>
         <span>${s.color_temp_kelvin} K</span>
         ${this.sleep ? html`<span class="tag">sleep mode</span>` : nothing}
@@ -600,6 +619,8 @@ export class AlSimPanel extends LitElement {
     .sunlabel { fill: var(--secondary-text-color); font-size: 11px; }
     .line { fill: none; stroke: var(--primary-color); stroke-width: 3; }
     .playhead { stroke: var(--primary-text-color); stroke-width: 2; }
+    .tip rect { fill: var(--primary-text-color); opacity: 0.88; }
+    .tip text { fill: var(--card-background-color, #fff); font-size: 12px; font-weight: 600; }
     .dot { fill: var(--card-background-color); stroke: var(--primary-color); stroke-width: 3; }
     .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-top: 12px; }
     .spacer { flex: 1; }

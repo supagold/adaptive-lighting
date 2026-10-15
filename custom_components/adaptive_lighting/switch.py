@@ -695,6 +695,43 @@ def _supported_features(hass: HomeAssistant, light: str) -> set[str]:
     return supported
 
 
+def build_sun_light_settings(
+    hass: HomeAssistant,
+    name: str,
+    data: dict[str, Any],
+) -> SunLightSettings:
+    """Build the curve calculator from validated options (`validate()` output).
+
+    homeops fork: extracted verbatim from AdaptiveSwitch._set_changeable_settings
+    so the simulator builds exactly what the switch builds.
+    """
+    return SunLightSettings(
+        name=name,
+        astral_observer=get_astral_observer(hass),
+        adapt_until_sleep=data[CONF_ADAPT_UNTIL_SLEEP],
+        max_brightness=data[CONF_MAX_BRIGHTNESS],
+        max_color_temp=data[CONF_MAX_COLOR_TEMP],
+        min_brightness=data[CONF_MIN_BRIGHTNESS],
+        min_color_temp=data[CONF_MIN_COLOR_TEMP],
+        sleep_brightness=data[CONF_SLEEP_BRIGHTNESS],
+        sleep_color_temp=data[CONF_SLEEP_COLOR_TEMP],
+        sleep_rgb_color=data[CONF_SLEEP_RGB_COLOR],
+        sleep_rgb_or_color_temp=data[CONF_SLEEP_RGB_OR_COLOR_TEMP],
+        sunrise_offset=data[CONF_SUNRISE_OFFSET],
+        sunrise_time=data[CONF_SUNRISE_TIME],
+        min_sunrise_time=data[CONF_MIN_SUNRISE_TIME],
+        max_sunrise_time=data[CONF_MAX_SUNRISE_TIME],
+        sunset_offset=data[CONF_SUNSET_OFFSET],
+        sunset_time=data[CONF_SUNSET_TIME],
+        min_sunset_time=data[CONF_MIN_SUNSET_TIME],
+        max_sunset_time=data[CONF_MAX_SUNSET_TIME],
+        brightness_mode=data[CONF_BRIGHTNESS_MODE],
+        brightness_mode_time_dark=data[CONF_BRIGHTNESS_MODE_TIME_DARK],
+        brightness_mode_time_light=data[CONF_BRIGHTNESS_MODE_TIME_LIGHT],
+        timezone=zoneinfo.ZoneInfo(hass.config.time_zone),
+    )
+
+
 def compute_light_service_data(
     light: str,
     settings: dict[str, Any],
@@ -1045,32 +1082,10 @@ class AdaptiveSwitch(SwitchEntity, RestoreEntity):
             self._multi_light_intercept = False
         self._expand_light_groups_flag = data[CONF_EXPAND_LIGHT_GROUPS]
         self._expand_light_groups()  # updates manual control timers
-        observer = get_astral_observer(self.hass)
-
-        self._sun_light_settings = SunLightSettings(
-            name=self._name,
-            astral_observer=observer,
-            adapt_until_sleep=data[CONF_ADAPT_UNTIL_SLEEP],
-            max_brightness=data[CONF_MAX_BRIGHTNESS],
-            max_color_temp=data[CONF_MAX_COLOR_TEMP],
-            min_brightness=data[CONF_MIN_BRIGHTNESS],
-            min_color_temp=data[CONF_MIN_COLOR_TEMP],
-            sleep_brightness=data[CONF_SLEEP_BRIGHTNESS],
-            sleep_color_temp=data[CONF_SLEEP_COLOR_TEMP],
-            sleep_rgb_color=data[CONF_SLEEP_RGB_COLOR],
-            sleep_rgb_or_color_temp=data[CONF_SLEEP_RGB_OR_COLOR_TEMP],
-            sunrise_offset=data[CONF_SUNRISE_OFFSET],
-            sunrise_time=data[CONF_SUNRISE_TIME],
-            min_sunrise_time=data[CONF_MIN_SUNRISE_TIME],
-            max_sunrise_time=data[CONF_MAX_SUNRISE_TIME],
-            sunset_offset=data[CONF_SUNSET_OFFSET],
-            sunset_time=data[CONF_SUNSET_TIME],
-            min_sunset_time=data[CONF_MIN_SUNSET_TIME],
-            max_sunset_time=data[CONF_MAX_SUNSET_TIME],
-            brightness_mode=data[CONF_BRIGHTNESS_MODE],
-            brightness_mode_time_dark=data[CONF_BRIGHTNESS_MODE_TIME_DARK],
-            brightness_mode_time_light=data[CONF_BRIGHTNESS_MODE_TIME_LIGHT],
-            timezone=zoneinfo.ZoneInfo(self.hass.config.time_zone),
+        self._sun_light_settings = build_sun_light_settings(
+            self.hass,
+            self._name,
+            data,
         )
         _LOGGER.debug(
             "%s: Set switch settings for lights '%s'. now using data: '%s'",

@@ -105,4 +105,4 @@ from and saved through HA's options flow (REST), the same path as the Settings U
 2. `git checkout homeops && git merge v<new>` (merge the release tag, not upstream `main`)
 3. Resolve conflicts, using the table above as the list of places where they can occur.
 4. Run the full test suite, bump `manifest.json` to `<new>-homeops.1`, update `CHANGELOG-FORK.md`.
-5. Push, wait for CI to pass, tag, and publish a pre-release. Deploy to staging HA before prod.
+5. Push, wait for CI to pass, tag, and publish a **release** (not a pre-release: HACS hides pre-releases unless "show beta" is on for the repo). Deploy to staging HA before prod.

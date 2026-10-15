@@ -11,7 +11,7 @@ Project page, decisions and status: homeops wiki, *Adaptive Lighting Fork + Simu
 
 | Branch | Purpose |
 |---|---|
-| `main` | Mirror of upstream `main`. Never commit here. |
+| `main` | Left as it was when forked. Never push to it: pushing would trigger upstream's workflows there. Upstream comes in via release tags from the `upstream` remote. |
 | `homeops` | Default branch. Upstream release tag + fork changes. |
 
 Versions are `<upstream version>-homeops.<n>`, e.g. `1.32.0-homeops.1`, tagged `v1.32.0-homeops.1`.
@@ -30,8 +30,11 @@ Keep this list exact. It's what to check when merging an upstream release.
 | `.github/workflows/pytest.yaml` | Runs on `homeops`; matrix = prod HA version, latest stable, `dev` (allowed to fail). |
 | `.github/workflows/hassfest.yaml`, `validate.yml` | Run on `homeops`; HACS validation allowed on this fork. |
 
-Workflows disabled on the fork in GitHub settings (files untouched): `docs`, `docker-build`,
-`release-drafter`, `update-test-matrix`, `main-to-master-sync`, `toc`, `markdown-code-runner`.
+Workflows **deleted** on `homeops` (upstream project automation: docs site, Docker image,
+release drafter, weekly matrix-bump PRs, main→master sync, TOC/markdown bots): `docs.yml`,
+`docker-build.yml`, `release-drafter.yml`, `update-test-matrix.yaml`, `main-to-master-sync.yml`,
+`toc.yaml`, `markdown-code-runner.yml`. They can't be disabled in settings until they have run
+once, and they only make sense for upstream. If a merge brings back changes to them, keep the deletion.
 
 New files: `FORK.md`, `CHANGELOG-FORK.md`, `tests/test_light_service_data.py`, and from later
 phases `custom_components/adaptive_lighting/sim/`, `frontend-src/`, `tests/test_sim_*.py`.
@@ -52,7 +55,7 @@ Baseline at v1.32.0 on HA 2026.6.4: 467 passed.
 
 ## Syncing an upstream release
 
-1. `git fetch upstream --tags && git push origin upstream/main:main`
+1. `git fetch upstream --tags` (`upstream` = https://github.com/basnijholt/adaptive-lighting.git)
 2. `git checkout homeops && git merge v<new>` (merge the release tag, not upstream `main`)
 3. Resolve conflicts, using the table above as the list of places where they can occur.
 4. Run the full test suite, bump `manifest.json` to `<new>-homeops.1`, update `CHANGELOG-FORK.md`.

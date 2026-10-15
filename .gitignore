@@ -138,3 +138,6 @@ config/*
 
 # Home Assistant core
 core/
+
+# homeops fork: panel build deps
+frontend-src/node_modules/

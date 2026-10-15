@@ -1,6 +1,11 @@
 {
   "domain": "adaptive_lighting",
   "name": "Adaptive Lighting",
+  "after_dependencies": [
+    "frontend",
+    "http",
+    "panel_custom"
+  ],
   "codeowners": [
     "@basnijholt",
     "@RubenKelevra",

@@ -26,10 +26,12 @@ Keep this list exact. It's what to check when merging an upstream release.
 |---|---|
 | `custom_components/adaptive_lighting/switch.py` | (1) Per-light step of `AdaptiveSwitch.prepare_adaptation_data` moved verbatim into module function `compute_light_service_data()`. (2) `SunLightSettings(...)` construction in `_set_changeable_settings` moved verbatim into module function `build_sun_light_settings(hass, name, data)`. Both are reused by the simulator so it computes exactly what the switch does. `Mapping` added to the `TYPE_CHECKING` imports. |
 | `custom_components/adaptive_lighting/__init__.py` | `from . import sim`; `await sim.async_setup(hass)` at the end of `async_setup` (registers the simulator's websocket API and panel once per HA run). |
-| `custom_components/adaptive_lighting/manifest.json` | `version` → fork version; `ulid-transform` dropped from `requirements` (HA core ships it — `ulid-transform==2.2.9` in HA 2026.6.4 — and hassfest rejects listing it; upstream's own hassfest fails on this). |
+| `custom_components/adaptive_lighting/manifest.json` | `version` → fork version; `after_dependencies: [frontend, http, panel_custom]` (load order for the panel; not hard requirements); `ulid-transform` dropped from `requirements` (HA core ships it — `ulid-transform==2.2.9` in HA 2026.6.4 — and hassfest rejects listing it; upstream's own hassfest fails on this). |
 | `hacs.json` | `name` → "Adaptive Lighting (homeops fork)". |
+| `.gitignore` | `frontend-src/node_modules/`. |
 | `.github/workflows/pytest.yaml` | Runs on `homeops`; matrix = prod HA version, latest stable, `dev` (allowed to fail). |
 | `.github/workflows/hassfest.yaml`, `validate.yml` | Run on `homeops`; HACS validation allowed on this fork. |
+| `.github/workflows/frontend.yaml` (new) | Panel: type-check, Vitest, build, and fail if the committed bundle differs from the build. |
 
 Workflows **deleted** on `homeops` (upstream project automation: docs site, Docker image,
 release drafter, weekly matrix-bump PRs, main→master sync, TOC/markdown bots): `docs.yml`,
@@ -38,9 +40,10 @@ release drafter, weekly matrix-bump PRs, main→master sync, TOC/markdown bots):
 once, and they only make sense for upstream. If a merge brings back changes to them, keep the deletion.
 
 New files: `FORK.md`, `CHANGELOG-FORK.md`, `custom_components/adaptive_lighting/sim/`
-(`engine.py`, `api.py`, `preview.py`, `__init__.py`), `tests/test_light_service_data.py`,
-`tests/test_sim_api.py`, `tests/test_sim_preview.py`,
-and later `frontend-src/` and the panel bundle.
+(`engine.py`, `api.py`, `preview.py`, `panel.py`, `__init__.py`),
+`custom_components/adaptive_lighting/frontend/al-sim-panel.js` (built panel, committed),
+`frontend-src/` (its source), `tests/test_light_service_data.py`, `tests/test_sim_api.py`,
+`tests/test_sim_preview.py`, `tests/test_sim_panel.py`.
 
 ## Simulator websocket API (admin only)
 
@@ -51,7 +54,7 @@ and later `frontend-src/` and the panel bundle.
 | `adaptive_lighting/sim/point` | `entry_id`, `overrides`, `at` (ISO datetime; local tz if naive), `sleep`, `adapt_brightness`, `adapt_color` | `{t, settings: {…as a sample}, per_light: {entity_id: {brightness, color_temp_kelvin or rgb_color, transition}}}` or `{errors}` |
 
 | `adaptive_lighting/sim/preview` (subscription) | `entry_id`, `lights` (default: all of the profile's), `timeout_s` 10–3600 (600) | result, then events `{status: "active", lights, timeout_s}` and `{status: "ended", reason}` (`timeout` / `unload` / `ha_stop`). Errors: `not_found`, `not_loaded`, `busy` (a light is in another preview). |
-| `adaptive_lighting/sim/preview/set` | `subscription` (the preview's message id), `overrides`, `at`, `sleep`, `transition_s` 0–60 (1) | `{sent: bool, commands: {entity_id: turn_on data}}`; `sent: false` = queued (max 1 command/s per session, newest wins) |
+| `adaptive_lighting/sim/preview/set` | `entry_id` (one preview per profile per connection), `overrides`, `at`, `sleep`, `transition_s` 0–60 (1) | `{sent: bool, commands: {entity_id: turn_on data}}`; `sent: false` = queued (max 1 command/s per session, newest wins) |
 
 **Preview takeover/restore** (`sim/preview.py`): snapshot each light, then set its manual-control
 flags to ALL directly in the manager. This starts no auto-reset timer and fires no event, and the
@@ -77,6 +80,24 @@ cd core && python3 -X dev -m pytest -q --timeout=30 -p no:sugar -n 4 tests/compo
 ```
 
 Baseline at v1.32.0 on HA 2026.6.4: 467 passed.
+
+## The panel
+
+Sidebar **Adaptive Lighting** (admin only), at `/adaptive-lighting`. Source in `frontend-src/`
+(TypeScript + Lit, bundled by Vite with Lit included, so no CDN). Build output is committed at
+`custom_components/adaptive_lighting/frontend/al-sim-panel.js`, served from
+`/adaptive_lighting_sim/`, and cache-busted with `?v=<manifest version>`. **Bump the version
+when the bundle changes**, or browsers keep the old one.
+
+```bash
+cd frontend-src
+npm ci
+npm test            # Vitest: time axis (incl. DST days), playback, throttle, options form, chart
+npm run build       # type-check + bundle into the integration; commit the result
+```
+
+All numbers come from the websocket API. The panel never computes the curve. Options are read
+from and saved through HA's options flow (REST), the same path as the Settings UI.
 
 ## Syncing an upstream release
 

@@ -12,5 +12,10 @@ Based on upstream v1.32.0.
 - Real-light preview: `adaptive_lighting/sim/preview` (subscription) + `/preview/set`. Restores
   each light's exact state and manual-control flags on release, disconnect, timeout, unload or
   HA stop. 12 tests; full suite 521 passed.
+- Simulator panel (sidebar "Adaptive Lighting", admin only): profile picker, day chart (brightness
+  + colour strip + sun events), click/drag/keyboard scrubbing, per-light swatches, day playback
+  (15/30/60/120 s), real-light preview toggle, options editor (live preview of unsaved values,
+  diff + save via options flow, stale-change check). `point` now returns `display_rgb` per light.
+  20 Vitest tests + 5 registration tests; full suite 527 passed.
 - Drop `ulid-transform` from manifest requirements (provided by HA core; fixes hassfest).
 - Fork CI: matrix trimmed to prod / latest stable / dev; HACS validation enabled on the fork.

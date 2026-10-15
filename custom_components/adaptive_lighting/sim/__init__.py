@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 
-from . import api, preview
+from . import api, panel, preview
 
 if TYPE_CHECKING:
     from homeassistant.core import Event, HomeAssistant
@@ -25,3 +25,4 @@ async def async_setup(hass: HomeAssistant) -> None:
 
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _end_previews)
     hass.data[DATA_SIM] = True
+    await panel.async_setup_panel(hass)

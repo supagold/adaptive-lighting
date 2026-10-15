@@ -11,6 +11,7 @@ from homeassistant.const import CONF_SOURCE, Platform
 from homeassistant.core import Event, HomeAssistant
 from homeassistant.helpers import service
 
+from . import sim
 from .const import (
     _DOMAIN_SCHEMA,  # pyright: ignore[reportPrivateUsage]
     ATTR_ADAPTIVE_LIGHTING_MANAGER,
@@ -97,6 +98,8 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
                     data=entry,
                 ),
             )
+    # homeops fork: simulator websocket API + panel (once per HA run).
+    await sim.async_setup(hass)
     return True
 
 

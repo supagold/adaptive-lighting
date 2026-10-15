@@ -24,7 +24,8 @@ Keep this list exact. It's what to check when merging an upstream release.
 
 | File | Change |
 |---|---|
-| `custom_components/adaptive_lighting/switch.py` | Per-light step of `AdaptiveSwitch.prepare_adaptation_data` moved verbatim into module function `compute_light_service_data()` (pure, reused by the simulator). `Mapping` added to the `TYPE_CHECKING` imports. |
+| `custom_components/adaptive_lighting/switch.py` | (1) Per-light step of `AdaptiveSwitch.prepare_adaptation_data` moved verbatim into module function `compute_light_service_data()`. (2) `SunLightSettings(...)` construction in `_set_changeable_settings` moved verbatim into module function `build_sun_light_settings(hass, name, data)`. Both are reused by the simulator so it computes exactly what the switch does. `Mapping` added to the `TYPE_CHECKING` imports. |
+| `custom_components/adaptive_lighting/__init__.py` | `from . import sim`; `await sim.async_setup(hass)` at the end of `async_setup` (registers the simulator's websocket API and panel once per HA run). |
 | `custom_components/adaptive_lighting/manifest.json` | `version` → fork version; `ulid-transform` dropped from `requirements` (HA core ships it — `ulid-transform==2.2.9` in HA 2026.6.4 — and hassfest rejects listing it; upstream's own hassfest fails on this). |
 | `hacs.json` | `name` → "Adaptive Lighting (homeops fork)". |
 | `.github/workflows/pytest.yaml` | Runs on `homeops`; matrix = prod HA version, latest stable, `dev` (allowed to fail). |
@@ -36,8 +37,20 @@ release drafter, weekly matrix-bump PRs, main→master sync, TOC/markdown bots):
 `toc.yaml`, `markdown-code-runner.yml`. They can't be disabled in settings until they have run
 once, and they only make sense for upstream. If a merge brings back changes to them, keep the deletion.
 
-New files: `FORK.md`, `CHANGELOG-FORK.md`, `tests/test_light_service_data.py`, and from later
-phases `custom_components/adaptive_lighting/sim/`, `frontend-src/`, `tests/test_sim_*.py`.
+New files: `FORK.md`, `CHANGELOG-FORK.md`, `custom_components/adaptive_lighting/sim/`
+(`engine.py`, `api.py`, `__init__.py`), `tests/test_light_service_data.py`, `tests/test_sim_api.py`,
+and later `frontend-src/` and the panel bundle.
+
+## Simulator websocket API (admin only)
+
+| type | request | result |
+|---|---|---|
+| `adaptive_lighting/sim/profiles` | – | `{time_zone, profiles: [{entry_id, title, loaded, options (effective), stored_options, error, lights: [{entity_id, name, state, features, supported_color_modes, min/max_color_temp_kelvin}], switches}]}` |
+| `adaptive_lighting/sim/curve` | `entry_id`, `overrides` {}, `date` (YYYY-MM-DD, default today), `step_min` 1–60 (5), `sleep` (false) | `{date, sun: {sunrise, sunset, solar_noon, solar_midnight}, samples: [{t, minute, brightness_pct, color_temp_kelvin, rgb_color, sun_position, force_rgb_color}]}` or `{errors: {field: message}}` |
+| `adaptive_lighting/sim/point` | `entry_id`, `overrides`, `at` (ISO datetime; local tz if naive), `sleep`, `adapt_brightness`, `adapt_color` | `{t, settings: {…as a sample}, per_light: {entity_id: {brightness, color_temp_kelvin or rgb_color, transition}}}` or `{errors}` |
+
+`overrides` are unsaved option values, validated field by field with the options-flow validators.
+Unknown `entry_id` → error `not_found`. Nothing in this API changes lights or config entries.
 
 ## Running the tests locally
 

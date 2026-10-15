@@ -24,7 +24,7 @@ interface Hass {
 
 type PreviewState = "off" | "starting" | "active";
 
-const BOX: ChartBox = { totalMinutes: 1440, width: 1000, height: 300, padLeft: 44, padRight: 12, padTop: 14, padBottom: 58 };
+const BOX: ChartBox = { totalMinutes: 1440, width: 1000, height: 300, padLeft: 44, padRight: 24, padTop: 14, padBottom: 58 };
 const STRIP_H = 18;
 const DURATIONS = [15, 30, 60, 120];
 const SUN_LABELS: Record<string, string> = { sunrise: "sunrise", sunset: "sunset", solar_noon: "noon", solar_midnight: "midnight" };

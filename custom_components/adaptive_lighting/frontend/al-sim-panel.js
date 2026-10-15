@@ -698,7 +698,7 @@ function se(s, t) {
 function W(s) {
   return s == null ? "—" : Array.isArray(s) ? s.join(", ") : String(s);
 }
-const ut = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight: 12, padTop: 14, padBottom: 58 }, ft = 18, re = [15, 30, 60, 120], ne = { sunrise: "sunrise", sunset: "sunset", solar_noon: "noon", solar_midnight: "midnight" }, j = class j extends M {
+const ut = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight: 24, padTop: 14, padBottom: 58 }, ft = 18, re = [15, 30, 60, 120], ne = { sunrise: "sunrise", sunset: "sunset", solar_noon: "noon", solar_midnight: "midnight" }, j = class j extends M {
   constructor() {
     super(), this.curveTimer = null, this.pointTimer = null, this.unsubPreview = null, this.loaded = !1, this.resize = new ResizeObserver((t) => {
       const e = Math.round(t[0].contentRect.width);

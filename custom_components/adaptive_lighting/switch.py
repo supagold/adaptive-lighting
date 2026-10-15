@@ -159,7 +159,7 @@ from .helpers import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Coroutine, Iterable
+    from collections.abc import Callable, Coroutine, Iterable, Mapping
 
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -693,6 +693,55 @@ def _supported_features(hass: HomeAssistant, light: str) -> set[str]:
         supported.add("brightness")
 
     return supported
+
+
+def compute_light_service_data(
+    light: str,
+    settings: dict[str, Any],
+    features: set[str],
+    attributes: Mapping[str, Any],
+    *,
+    transition: float,
+    adapt_brightness: bool,
+    adapt_color: bool,
+    prefer_rgb_color: bool,
+    sleep_rgb: bool,
+) -> dict[str, Any]:
+    """Build the light.turn_on data one light gets for the given settings.
+
+    homeops fork: extracted verbatim from AdaptiveSwitch.prepare_adaptation_data
+    so the simulator can show exactly what each bulb would receive. Pure: no hass.
+    `settings` is SunLightSettings.brightness_and_color() output; `features` is
+    _supported_features(); `attributes` is the light's state attributes.
+    """
+    service_data: dict[str, Any] = {ATTR_ENTITY_ID: light}
+
+    # Check transition == 0 to fix #378
+    if "transition" in features and transition > 0:
+        service_data[ATTR_TRANSITION] = transition
+
+    if "brightness" in features and adapt_brightness:
+        brightness = round(255 * settings["brightness_pct"] / 100)
+        service_data[ATTR_BRIGHTNESS] = brightness
+
+    if (
+        "color_temp" in features
+        and adapt_color
+        and not (prefer_rgb_color and "color" in features)
+        and not (sleep_rgb and "color" in features)
+        and not (settings["force_rgb_color"] and "color" in features)
+    ):
+        _LOGGER.debug("Setting color_temp of light %s", light)
+        min_kelvin = attributes["min_color_temp_kelvin"]
+        max_kelvin = attributes["max_color_temp_kelvin"]
+        color_temp_kelvin = settings["color_temp_kelvin"]
+        color_temp_kelvin = clamp(color_temp_kelvin, min_kelvin, max_kelvin)
+        service_data[ATTR_COLOR_TEMP_KELVIN] = color_temp_kelvin
+    elif "color" in features and adapt_color:
+        _LOGGER.debug("Setting rgb_color of light %s", light)
+        service_data[ATTR_RGB_COLOR] = settings["rgb_color"]
+
+    return service_data
 
 
 # All comparisons should be done with RGB since
@@ -1331,42 +1380,25 @@ class AdaptiveSwitch(SwitchEntity, RestoreEntity):
             transition,
         )
 
-        # Build service data.
-        service_data: dict[str, Any] = {ATTR_ENTITY_ID: light}
+        # Build service data (homeops fork: logic moved to compute_light_service_data).
         features = _supported_features(self.hass, light)
-
-        # Check transition == 0 to fix #378
-        use_transition = "transition" in features and transition > 0
-        if use_transition:
-            service_data[ATTR_TRANSITION] = transition
-
-        if "brightness" in features and adapt_brightness:
-            brightness = round(255 * self._settings["brightness_pct"] / 100)
-            service_data[ATTR_BRIGHTNESS] = brightness
-
-        sleep_rgb = (
-            self.sleep_mode_switch.is_on
-            and self._sun_light_settings.sleep_rgb_or_color_temp == "rgb_color"
+        state = self.hass.states.get(light)
+        assert isinstance(state, State)
+        service_data = compute_light_service_data(
+            light,
+            self._settings,
+            features,
+            state.attributes,
+            transition=transition,
+            adapt_brightness=adapt_brightness,
+            adapt_color=adapt_color,
+            prefer_rgb_color=prefer_rgb_color,
+            sleep_rgb=(
+                self.sleep_mode_switch.is_on
+                and self._sun_light_settings.sleep_rgb_or_color_temp == "rgb_color"
+            ),
         )
-        if (
-            "color_temp" in features
-            and adapt_color
-            and not (prefer_rgb_color and "color" in features)
-            and not (sleep_rgb and "color" in features)
-            and not (self._settings["force_rgb_color"] and "color" in features)
-        ):
-            _LOGGER.debug("%s: Setting color_temp of light %s", self._name, light)
-            state = self.hass.states.get(light)
-            assert isinstance(state, State)
-            attributes = state.attributes
-            min_kelvin = attributes["min_color_temp_kelvin"]
-            max_kelvin = attributes["max_color_temp_kelvin"]
-            color_temp_kelvin = self._settings["color_temp_kelvin"]
-            color_temp_kelvin = clamp(color_temp_kelvin, min_kelvin, max_kelvin)
-            service_data[ATTR_COLOR_TEMP_KELVIN] = color_temp_kelvin
-        elif "color" in features and adapt_color:
-            _LOGGER.debug("%s: Setting rgb_color of light %s", self._name, light)
-            service_data[ATTR_RGB_COLOR] = self._settings["rgb_color"]
+        use_transition = ATTR_TRANSITION in service_data
 
         required_attrs = [ATTR_RGB_COLOR, ATTR_COLOR_TEMP_KELVIN, ATTR_BRIGHTNESS]
         if not any(attr in service_data for attr in required_attrs):

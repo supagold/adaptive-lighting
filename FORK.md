@@ -38,7 +38,8 @@ release drafter, weekly matrix-bump PRs, main→master sync, TOC/markdown bots):
 once, and they only make sense for upstream. If a merge brings back changes to them, keep the deletion.
 
 New files: `FORK.md`, `CHANGELOG-FORK.md`, `custom_components/adaptive_lighting/sim/`
-(`engine.py`, `api.py`, `__init__.py`), `tests/test_light_service_data.py`, `tests/test_sim_api.py`,
+(`engine.py`, `api.py`, `preview.py`, `__init__.py`), `tests/test_light_service_data.py`,
+`tests/test_sim_api.py`, `tests/test_sim_preview.py`,
 and later `frontend-src/` and the panel bundle.
 
 ## Simulator websocket API (admin only)
@@ -49,8 +50,19 @@ and later `frontend-src/` and the panel bundle.
 | `adaptive_lighting/sim/curve` | `entry_id`, `overrides` {}, `date` (YYYY-MM-DD, default today), `step_min` 1–60 (5), `sleep` (false) | `{date, sun: {sunrise, sunset, solar_noon, solar_midnight}, samples: [{t, minute, brightness_pct, color_temp_kelvin, rgb_color, sun_position, force_rgb_color}]}` or `{errors: {field: message}}` |
 | `adaptive_lighting/sim/point` | `entry_id`, `overrides`, `at` (ISO datetime; local tz if naive), `sleep`, `adapt_brightness`, `adapt_color` | `{t, settings: {…as a sample}, per_light: {entity_id: {brightness, color_temp_kelvin or rgb_color, transition}}}` or `{errors}` |
 
+| `adaptive_lighting/sim/preview` (subscription) | `entry_id`, `lights` (default: all of the profile's), `timeout_s` 10–3600 (600) | result, then events `{status: "active", lights, timeout_s}` and `{status: "ended", reason}` (`timeout` / `unload` / `ha_stop`). Errors: `not_found`, `not_loaded`, `busy` (a light is in another preview). |
+| `adaptive_lighting/sim/preview/set` | `subscription` (the preview's message id), `overrides`, `at`, `sleep`, `transition_s` 0–60 (1) | `{sent: bool, commands: {entity_id: turn_on data}}`; `sent: false` = queued (max 1 command/s per session, newest wins) |
+
+**Preview takeover/restore** (`sim/preview.py`): snapshot each light, then set its manual-control
+flags to ALL directly in the manager. This starts no auto-reset timer and fires no event, and the
+interval loop skips the light. Commands go out with an Adaptive Lighting context, so manual-change
+detection ignores them. Ending (unsubscribe, websocket close, timeout, profile unload, HA stop)
+restores each light's exact previous flags. Lights that were off go off. Lights that were adapting
+are force re-adapted. Lights that were manual get their snapshot back, and so does every light on
+unload / HA stop.
+
 `overrides` are unsaved option values, validated field by field with the options-flow validators.
-Unknown `entry_id` → error `not_found`. Nothing in this API changes lights or config entries.
+Unknown `entry_id` → error `not_found`. Only `preview` / `preview/set` touch lights; nothing changes config entries.
 
 ## Running the tests locally
 

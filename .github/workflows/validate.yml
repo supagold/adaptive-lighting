@@ -2,7 +2,7 @@ name: Validate
 
 on:
   push:
-    branches: [master]
+    branches: [master, homeops]
   pull_request:
   schedule:
     - cron: "0 0 * * *"
@@ -10,7 +10,7 @@ on:
 jobs:
   validate_hacs:
     runs-on: "ubuntu-latest"
-    if: github.repository == 'basnijholt/adaptive-lighting' # Don't run on forked repos
+    if: github.repository == 'basnijholt/adaptive-lighting' || github.repository == 'supagold/adaptive-lighting' # homeops fork: validate HACS installability
     steps:
       - uses: "actions/checkout@v7.0.1"
       - name: HACS validation

@@ -1,9 +1,10 @@
 """Sidebar panel registration for the simulator (homeops fork).
 
 Serves the built bundle from `frontend/` and registers an admin-only sidebar panel once per
-HA run. The integration declares http/frontend/panel_custom as *after_dependencies* (order,
-not a hard requirement), so this waits for the frontend if it isn't loaded yet and does
-nothing in environments without it (e.g. upstream's test harness).
+HA run. The integration declares http/frontend/panel_custom as *after_dependencies* (load
+order, and hassfest wants imported components declared). They aren't hard requirements, so
+this waits for the frontend if it isn't loaded yet, and does nothing in environments without
+a web server (e.g. upstream's test harness).
 """
 
 # Relative parent imports are required. HA loads this package under the
@@ -65,13 +66,14 @@ async def async_register_panel(hass: HomeAssistant) -> bool:
 
 
 def _ready(hass: HomeAssistant) -> bool:
-    return (
-        hass.http is not None and {"frontend", "panel_custom"} <= hass.config.components
-    )
+    # Only `frontend` must be loaded: panel_custom.async_register_panel is a stateless
+    # wrapper around frontend.async_register_built_in_panel, and HA does not load the
+    # panel_custom component by default (after_dependencies orders, never loads).
+    return hass.http is not None and "frontend" in hass.config.components
 
 
 async def async_setup_panel(hass: HomeAssistant) -> None:
-    """Register the panel now, or as soon as frontend + panel_custom are loaded."""
+    """Register the panel now, or as soon as the frontend is loaded."""
     if _ready(hass):
         await async_register_panel(hass)
         return
@@ -79,7 +81,7 @@ async def async_setup_panel(hass: HomeAssistant) -> None:
         return  # no web server (tests, safe mode): nothing to serve a panel from
 
     async def _on_loaded(event: Event) -> None:
-        if event.data.get("component") in ("frontend", "panel_custom") and _ready(hass):
+        if event.data.get("component") == "frontend" and _ready(hass):
             remove()
             await async_register_panel(hass)
 

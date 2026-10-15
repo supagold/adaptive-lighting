@@ -40,7 +40,7 @@ def _loaded(hass, *components):
 
 
 async def test_registers_admin_panel_with_versioned_bundle(hass, fake_panels):
-    _loaded(hass, "frontend", "panel_custom")
+    _loaded(hass, "frontend")
     await panel.async_setup_panel(hass)
     kwargs = fake_panels.call_args.kwargs
     version = (await async_get_integration(hass, "adaptive_lighting")).version
@@ -56,7 +56,7 @@ async def test_registers_admin_panel_with_versioned_bundle(hass, fake_panels):
 
 
 async def test_registers_only_once(hass, fake_panels):
-    _loaded(hass, "frontend", "panel_custom")
+    _loaded(hass, "frontend")
     for _ in range(3):
         await panel.async_setup_panel(hass)
     assert fake_panels.call_count == 1
@@ -66,13 +66,23 @@ async def test_registers_only_once(hass, fake_panels):
 async def test_waits_for_frontend_then_registers(hass, fake_panels):
     await panel.async_setup_panel(hass)  # frontend not loaded yet
     assert fake_panels.call_count == 0
-    _loaded(hass, "frontend", "panel_custom")
-    hass.bus.async_fire(EVENT_COMPONENT_LOADED, {"component": "panel_custom"})
+    _loaded(hass, "frontend")
+    hass.bus.async_fire(EVENT_COMPONENT_LOADED, {"component": "frontend"})
     await hass.async_block_till_done()
     assert fake_panels.call_count == 1
     # later component loads don't re-register
-    hass.bus.async_fire(EVENT_COMPONENT_LOADED, {"component": "frontend"})
+    hass.bus.async_fire(EVENT_COMPONENT_LOADED, {"component": "panel_custom"})
     await hass.async_block_till_done()
+    assert fake_panels.call_count == 1
+
+
+async def test_registers_without_panel_custom_component_loaded(hass, fake_panels):
+    """Regression (2026-10-15 staging): HA loads `frontend` by default but not
+    `panel_custom`; waiting for both meant the panel never appeared.
+    """
+    _loaded(hass, "frontend")
+    assert "panel_custom" not in hass.config.components
+    await panel.async_setup_panel(hass)
     assert fake_panels.call_count == 1
 
 

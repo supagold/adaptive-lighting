@@ -141,3 +141,5 @@ core/
 
 # homeops fork: panel build deps
 frontend-src/node_modules/
+# upstream ignores lib/ (Python template); the panel source keeps its modules in src/lib
+!frontend-src/src/lib/

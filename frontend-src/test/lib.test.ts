@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -146,6 +146,23 @@ describe("real-light throttle", () => {
   });
 });
 
+describe("real-light throttle with real timer defaults", () => {
+  it("delivers the queued value through the default timer functions", () => {
+    vi.useFakeTimers();
+    try {
+      const sent: string[] = [];
+      const t = new LatestThrottle<string>(1000, (v) => sent.push(v));
+      t.push("21:10");
+      t.push("12:00"); // within the interval: queued on the default timer
+      expect(sent).toEqual(["21:10"]);
+      vi.advanceTimersByTime(1000);
+      expect(sent).toEqual(["21:10", "12:00"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe("options form", () => {
   const form = parseForm(flow);
 
@@ -208,5 +225,14 @@ describe("chart geometry", () => {
   it("hour ticks follow the day length", () => {
     expect(hourTicks(1440)).toEqual([0, 180, 360, 540, 720, 900, 1080, 1260, 1440]);
     expect(hourTicks(1500).length).toBe(9);
+  });
+});
+
+import { snap } from "../src/lib/time";
+describe("snap", () => {
+  it("rounds taps to the 5-minute sample grid", () => {
+    expect(snap(1199)).toBe(1200);
+    expect(snap(1197.4)).toBe(1195);
+    expect(snap(0.4)).toBe(0);
   });
 });

@@ -9,7 +9,7 @@
 
 import { LitElement, css, html, nothing, svg, type PropertyValues } from "lit";
 import type { Curve, Errors, PerLight, Point, Profile } from "./lib/types";
-import { clockText, isoForMinute, minuteForX, nearestIndex, totalMinutes, xForMinute } from "./lib/time";
+import { clockText, isoForMinute, minuteForX, nearestIndex, snap, totalMinutes, xForMinute } from "./lib/time";
 import { brightnessPath, colorStops, hourTicks, yForPct, type ChartBox } from "./lib/chart";
 import { LatestThrottle, Playback } from "./lib/playback";
 import { buildPayload, changes, coerce, parseForm, savedValues, show, type Field, type Form } from "./lib/options";
@@ -50,6 +50,7 @@ export class AlSimPanel extends LitElement {
     message: { state: true },
     confirming: { state: true },
     busy: { state: true },
+    chartWidth: { state: true },
   };
 
   declare hass: Hass;
@@ -71,6 +72,7 @@ export class AlSimPanel extends LitElement {
   declare message: string;
   declare confirming: boolean;
   declare busy: boolean;
+  declare chartWidth: number;
 
   private playback: Playback;
   private curveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -78,6 +80,11 @@ export class AlSimPanel extends LitElement {
   private unsubPreview: (() => Promise<void>) | null = null;
   private previewSender: LatestThrottle<string>;
   private loaded = false;
+  private resize = new ResizeObserver((entries) => {
+    // Draw the chart at its real pixel width so text stays ~12px on phones.
+    const w = Math.round(entries[0].contentRect.width);
+    if (w > 0 && Math.abs(w - this.chartWidth) > 4) this.chartWidth = Math.min(Math.max(w, 300), 1400);
+  });
 
   constructor() {
     super();
@@ -98,11 +105,13 @@ export class AlSimPanel extends LitElement {
     this.message = "";
     this.confirming = false;
     this.busy = false;
+    this.chartWidth = 1000;
     this.playback = new Playback(1440, 30_000, (m, playing) => {
       this.minute = m;
       this.playing = playing;
       this.schedulePoint(playing ? 120 : 0);
     });
+    this.playback.minute = this.minute; // start where the panel's playhead is (12:00)
     this.previewSender = new LatestThrottle<string>(1000, (at) => void this.sendPreview(at));
   }
 
@@ -114,8 +123,14 @@ export class AlSimPanel extends LitElement {
     }
   }
 
+  protected firstUpdated(): void {
+    const card = this.renderRoot.querySelector(".chartcard");
+    if (card) this.resize.observe(card);
+  }
+
   disconnectedCallback(): void {
     super.disconnectedCallback();
+    this.resize.disconnect();
     this.playback.pause();
     void this.stopPreview();
   }
@@ -335,8 +350,9 @@ export class AlSimPanel extends LitElement {
     if (ev.type === "pointermove" && ev.buttons === 0) return;
     const svgEl = ev.currentTarget as SVGSVGElement;
     const rect = svgEl.getBoundingClientRect();
-    const x = ((ev.clientX - rect.left) / rect.width) * BOX.width;
-    this.playback.seek(minuteForX(x, { ...BOX, totalMinutes: this.playback.totalMinutes }));
+    const box = this.box(this.playback.totalMinutes);
+    const x = ((ev.clientX - rect.left) / rect.width) * box.width;
+    this.playback.seek(snap(minuteForX(x, box)));
     if (ev.type === "pointerdown") svgEl.setPointerCapture(ev.pointerId);
   }
 
@@ -349,9 +365,17 @@ export class AlSimPanel extends LitElement {
     ev.preventDefault();
   }
 
+  private box(total: number): ChartBox {
+    const narrow = this.chartWidth < 600;
+    return { ...BOX, width: this.chartWidth, height: narrow ? 240 : BOX.height, totalMinutes: total };
+  }
+
   private renderChart() {
     const samples = this.curve?.samples ?? [];
-    const box = { ...BOX, totalMinutes: totalMinutes(samples) };
+    const box = this.box(totalMinutes(samples));
+    const narrow = box.width < 600;
+    const profile = this.profiles.find((p) => p.entry_id === this.selected);
+    const anyColour = (profile?.lights ?? []).some((l) => l.features?.includes("color") || l.features?.includes("color_temp"));
     const stripY = box.height - box.padBottom + 22;
     const idx = nearestIndex(samples, this.minute);
     const cur = idx >= 0 ? samples[idx] : null;
@@ -384,7 +408,7 @@ export class AlSimPanel extends LitElement {
             <line class="grid" x1=${box.padLeft} x2=${box.width - box.padRight} y1=${yForPct(p, box)} y2=${yForPct(p, box)}></line>
             <text class="axis" x=${box.padLeft - 6} y=${yForPct(p, box) + 4} text-anchor="end">${p}%</text>`,
         )}
-        ${hourTicks(box.totalMinutes).map(
+        ${hourTicks(box.totalMinutes, narrow ? 6 : 3).map(
           (m) => svg`
             <line class="grid" x1=${xForMinute(m, box)} x2=${xForMinute(m, box)} y1=${box.padTop} y2=${box.height - box.padBottom}></line>
             <text class="axis" x=${xForMinute(m, box)} y=${box.height - box.padBottom + 14} text-anchor="middle">${samples.length ? clockText(samples[nearestIndex(samples, m)].t) : ""}</text>`,
@@ -395,11 +419,12 @@ export class AlSimPanel extends LitElement {
           const x = xForMinute(m, box);
           return svg`
             <line class="sun" x1=${x} x2=${x} y1=${box.padTop} y2=${box.height - box.padBottom}></line>
-            <text class="sunlabel" x=${x + 3} y=${box.padTop + 10}>${SUN_LABELS[name] ?? name} ${clockText(iso)}</text>`;
+            ${narrow && (name === "solar_noon" || name === "solar_midnight") ? nothing : svg`<text class="sunlabel" x=${x + 3} y=${box.padTop + 10}>${narrow ? "" : `${SUN_LABELS[name] ?? name} `}${clockText(iso)}</text>`}`;
         })}
         <path class="line" d=${brightnessPath(samples, box)}></path>
-        <rect x=${box.padLeft} y=${stripY} width=${box.width - box.padLeft - box.padRight} height=${STRIP_H} rx="3" fill="url(#ct)"></rect>
+        <rect x=${box.padLeft} y=${stripY} width=${box.width - box.padLeft - box.padRight} height=${STRIP_H} rx="3" fill="url(#ct)" opacity=${anyColour ? 1 : 0.25}></rect>
         <text class="axis" x=${box.padLeft - 6} y=${stripY + 13} text-anchor="end">colour</text>
+        ${anyColour ? nothing : svg`<text class="axis" x=${box.padLeft + 8} y=${stripY + 13}>not used: these lights are dimmer-only</text>`}
         <line class="playhead" x1=${px} x2=${px} y1=${box.padTop} y2=${stripY + STRIP_H}></line>
         ${cur ? svg`<circle class="dot" cx=${px} cy=${yForPct(cur.brightness_pct, box)} r="6"></circle>` : nothing}
       </svg>
@@ -522,7 +547,7 @@ export class AlSimPanel extends LitElement {
       ${profile?.error ? html`<div class="banner warnbg">⚠ ${profile.error}</div>` : nothing}
       ${profile && !profile.lights.length ? html`<div class="banner">This profile has no lights, so it doesn't control anything.</div>` : nothing}
 
-      <section class="card">
+      <section class="card chartcard">
         ${this.renderChart()}
         <div class="controls">
           <button class="primary" @click=${() => this.playback.toggle()} aria-pressed=${this.playing}>${this.playing ? "❚❚ Pause" : "▶ Play the day"}</button>

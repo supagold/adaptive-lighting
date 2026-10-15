@@ -3,18 +3,18 @@
  * Copyright 2019 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const H = globalThis, J = H.ShadowRoot && (H.ShadyCSS === void 0 || H.ShadyCSS.nativeShadow) && "adoptedStyleSheets" in Document.prototype && "replace" in CSSStyleSheet.prototype, K = Symbol(), Y = /* @__PURE__ */ new WeakMap();
-let ut = class {
+const H = globalThis, K = H.ShadowRoot && (H.ShadyCSS === void 0 || H.ShadyCSS.nativeShadow) && "adoptedStyleSheets" in Document.prototype && "replace" in CSSStyleSheet.prototype, G = Symbol(), Q = /* @__PURE__ */ new WeakMap();
+let mt = class {
   constructor(t, e, i) {
-    if (this._$cssResult$ = !0, i !== K) throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");
+    if (this._$cssResult$ = !0, i !== G) throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");
     this.cssText = t, this.t = e;
   }
   get styleSheet() {
     let t = this.o;
     const e = this.t;
-    if (J && t === void 0) {
+    if (K && t === void 0) {
       const i = e !== void 0 && e.length === 1;
-      i && (t = Y.get(e)), t === void 0 && ((this.o = t = new CSSStyleSheet()).replaceSync(this.cssText), i && Y.set(e, t));
+      i && (t = Q.get(e)), t === void 0 && ((this.o = t = new CSSStyleSheet()).replaceSync(this.cssText), i && Q.set(e, t));
     }
     return t;
   }
@@ -22,106 +22,106 @@ let ut = class {
     return this.cssText;
   }
 };
-const bt = (r) => new ut(typeof r == "string" ? r : r + "", void 0, K), _t = (r, ...t) => {
-  const e = r.length === 1 ? r[0] : t.reduce((i, s, n) => i + ((o) => {
+const wt = (s) => new mt(typeof s == "string" ? s : s + "", void 0, G), xt = (s, ...t) => {
+  const e = s.length === 1 ? s[0] : t.reduce((i, r, n) => i + ((o) => {
     if (o._$cssResult$ === !0) return o.cssText;
     if (typeof o == "number") return o;
     throw Error("Value passed to 'css' function must be a 'css' function result: " + o + ". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.");
-  })(s) + r[n + 1], r[0]);
-  return new ut(e, r, K);
-}, wt = (r, t) => {
-  if (J) r.adoptedStyleSheets = t.map((e) => e instanceof CSSStyleSheet ? e : e.styleSheet);
+  })(r) + s[n + 1], s[0]);
+  return new mt(e, s, G);
+}, At = (s, t) => {
+  if (K) s.adoptedStyleSheets = t.map((e) => e instanceof CSSStyleSheet ? e : e.styleSheet);
   else for (const e of t) {
-    const i = document.createElement("style"), s = H.litNonce;
-    s !== void 0 && i.setAttribute("nonce", s), i.textContent = e.cssText, r.appendChild(i);
+    const i = document.createElement("style"), r = H.litNonce;
+    r !== void 0 && i.setAttribute("nonce", r), i.textContent = e.cssText, s.appendChild(i);
   }
-}, Q = J ? (r) => r : (r) => r instanceof CSSStyleSheet ? ((t) => {
+}, tt = K ? (s) => s : (s) => s instanceof CSSStyleSheet ? ((t) => {
   let e = "";
   for (const i of t.cssRules) e += i.cssText;
-  return bt(e);
-})(r) : r;
+  return wt(e);
+})(s) : s;
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const { is: xt, defineProperty: At, getOwnPropertyDescriptor: kt, getOwnPropertyNames: Et, getOwnPropertySymbols: St, getPrototypeOf: Pt } = Object, D = globalThis, tt = D.trustedTypes, Mt = tt ? tt.emptyScript : "", Ct = D.reactiveElementPolyfillSupport, S = (r, t) => r, V = { toAttribute(r, t) {
+const { is: kt, defineProperty: Et, getOwnPropertyDescriptor: St, getOwnPropertyNames: Pt, getOwnPropertySymbols: Mt, getPrototypeOf: Ct } = Object, z = globalThis, et = z.trustedTypes, Tt = et ? et.emptyScript : "", Ot = z.reactiveElementPolyfillSupport, P = (s, t) => s, q = { toAttribute(s, t) {
   switch (t) {
     case Boolean:
-      r = r ? Mt : null;
+      s = s ? Tt : null;
       break;
     case Object:
     case Array:
-      r = r == null ? r : JSON.stringify(r);
+      s = s == null ? s : JSON.stringify(s);
   }
-  return r;
-}, fromAttribute(r, t) {
-  let e = r;
+  return s;
+}, fromAttribute(s, t) {
+  let e = s;
   switch (t) {
     case Boolean:
-      e = r !== null;
+      e = s !== null;
       break;
     case Number:
-      e = r === null ? null : Number(r);
+      e = s === null ? null : Number(s);
       break;
     case Object:
     case Array:
       try {
-        e = JSON.parse(r);
+        e = JSON.parse(s);
       } catch {
         e = null;
       }
   }
   return e;
-} }, ft = (r, t) => !xt(r, t), et = { attribute: !0, type: String, converter: V, reflect: !1, useDefault: !1, hasChanged: ft };
-Symbol.metadata ??= Symbol("metadata"), D.litPropertyMetadata ??= /* @__PURE__ */ new WeakMap();
-let b = class extends HTMLElement {
+} }, gt = (s, t) => !kt(s, t), it = { attribute: !0, type: String, converter: q, reflect: !1, useDefault: !1, hasChanged: gt };
+Symbol.metadata ??= Symbol("metadata"), z.litPropertyMetadata ??= /* @__PURE__ */ new WeakMap();
+let w = class extends HTMLElement {
   static addInitializer(t) {
     this._$Ei(), (this.l ??= []).push(t);
   }
   static get observedAttributes() {
     return this.finalize(), this._$Eh && [...this._$Eh.keys()];
   }
-  static createProperty(t, e = et) {
+  static createProperty(t, e = it) {
     if (e.state && (e.attribute = !1), this._$Ei(), this.prototype.hasOwnProperty(t) && ((e = Object.create(e)).wrapped = !0), this.elementProperties.set(t, e), !e.noAccessor) {
-      const i = Symbol(), s = this.getPropertyDescriptor(t, i, e);
-      s !== void 0 && At(this.prototype, t, s);
+      const i = Symbol(), r = this.getPropertyDescriptor(t, i, e);
+      r !== void 0 && Et(this.prototype, t, r);
     }
   }
   static getPropertyDescriptor(t, e, i) {
-    const { get: s, set: n } = kt(this.prototype, t) ?? { get() {
+    const { get: r, set: n } = St(this.prototype, t) ?? { get() {
       return this[e];
     }, set(o) {
       this[e] = o;
     } };
-    return { get: s, set(o) {
-      const l = s?.call(this);
+    return { get: r, set(o) {
+      const l = r?.call(this);
       n?.call(this, o), this.requestUpdate(t, l, i);
     }, configurable: !0, enumerable: !0 };
   }
   static getPropertyOptions(t) {
-    return this.elementProperties.get(t) ?? et;
+    return this.elementProperties.get(t) ?? it;
   }
   static _$Ei() {
-    if (this.hasOwnProperty(S("elementProperties"))) return;
-    const t = Pt(this);
+    if (this.hasOwnProperty(P("elementProperties"))) return;
+    const t = Ct(this);
     t.finalize(), t.l !== void 0 && (this.l = [...t.l]), this.elementProperties = new Map(t.elementProperties);
   }
   static finalize() {
-    if (this.hasOwnProperty(S("finalized"))) return;
-    if (this.finalized = !0, this._$Ei(), this.hasOwnProperty(S("properties"))) {
-      const e = this.properties, i = [...Et(e), ...St(e)];
-      for (const s of i) this.createProperty(s, e[s]);
+    if (this.hasOwnProperty(P("finalized"))) return;
+    if (this.finalized = !0, this._$Ei(), this.hasOwnProperty(P("properties"))) {
+      const e = this.properties, i = [...Pt(e), ...Mt(e)];
+      for (const r of i) this.createProperty(r, e[r]);
     }
     const t = this[Symbol.metadata];
     if (t !== null) {
       const e = litPropertyMetadata.get(t);
-      if (e !== void 0) for (const [i, s] of e) this.elementProperties.set(i, s);
+      if (e !== void 0) for (const [i, r] of e) this.elementProperties.set(i, r);
     }
     this._$Eh = /* @__PURE__ */ new Map();
     for (const [e, i] of this.elementProperties) {
-      const s = this._$Eu(e, i);
-      s !== void 0 && this._$Eh.set(s, e);
+      const r = this._$Eu(e, i);
+      r !== void 0 && this._$Eh.set(r, e);
     }
     this.elementStyles = this.finalizeStyles(this.styles);
   }
@@ -129,8 +129,8 @@ let b = class extends HTMLElement {
     const e = [];
     if (Array.isArray(t)) {
       const i = new Set(t.flat(1 / 0).reverse());
-      for (const s of i) e.unshift(Q(s));
-    } else t !== void 0 && e.push(Q(t));
+      for (const r of i) e.unshift(tt(r));
+    } else t !== void 0 && e.push(tt(t));
     return e;
   }
   static _$Eu(t, e) {
@@ -156,7 +156,7 @@ let b = class extends HTMLElement {
   }
   createRenderRoot() {
     const t = this.shadowRoot ?? this.attachShadow(this.constructor.shadowRootOptions);
-    return wt(t, this.constructor.elementStyles), t;
+    return At(t, this.constructor.elementStyles), t;
   }
   connectedCallback() {
     this.renderRoot ??= this.createRenderRoot(), this.enableUpdating(!0), this._$EO?.forEach((t) => t.hostConnected?.());
@@ -170,31 +170,31 @@ let b = class extends HTMLElement {
     this._$AK(t, i);
   }
   _$ET(t, e) {
-    const i = this.constructor.elementProperties.get(t), s = this.constructor._$Eu(t, i);
-    if (s !== void 0 && i.reflect === !0) {
-      const n = (i.converter?.toAttribute !== void 0 ? i.converter : V).toAttribute(e, i.type);
-      this._$Em = t, n == null ? this.removeAttribute(s) : this.setAttribute(s, n), this._$Em = null;
+    const i = this.constructor.elementProperties.get(t), r = this.constructor._$Eu(t, i);
+    if (r !== void 0 && i.reflect === !0) {
+      const n = (i.converter?.toAttribute !== void 0 ? i.converter : q).toAttribute(e, i.type);
+      this._$Em = t, n == null ? this.removeAttribute(r) : this.setAttribute(r, n), this._$Em = null;
     }
   }
   _$AK(t, e) {
-    const i = this.constructor, s = i._$Eh.get(t);
-    if (s !== void 0 && this._$Em !== s) {
-      const n = i.getPropertyOptions(s), o = typeof n.converter == "function" ? { fromAttribute: n.converter } : n.converter?.fromAttribute !== void 0 ? n.converter : V;
-      this._$Em = s;
+    const i = this.constructor, r = i._$Eh.get(t);
+    if (r !== void 0 && this._$Em !== r) {
+      const n = i.getPropertyOptions(r), o = typeof n.converter == "function" ? { fromAttribute: n.converter } : n.converter?.fromAttribute !== void 0 ? n.converter : q;
+      this._$Em = r;
       const l = o.fromAttribute(e, n.type);
-      this[s] = l ?? this._$Ej?.get(s) ?? l, this._$Em = null;
+      this[r] = l ?? this._$Ej?.get(r) ?? l, this._$Em = null;
     }
   }
-  requestUpdate(t, e, i, s = !1, n) {
+  requestUpdate(t, e, i, r = !1, n) {
     if (t !== void 0) {
       const o = this.constructor;
-      if (s === !1 && (n = this[t]), i ??= o.getPropertyOptions(t), !((i.hasChanged ?? ft)(n, e) || i.useDefault && i.reflect && n === this._$Ej?.get(t) && !this.hasAttribute(o._$Eu(t, i)))) return;
+      if (r === !1 && (n = this[t]), i ??= o.getPropertyOptions(t), !((i.hasChanged ?? gt)(n, e) || i.useDefault && i.reflect && n === this._$Ej?.get(t) && !this.hasAttribute(o._$Eu(t, i)))) return;
       this.C(t, e, i);
     }
     this.isUpdatePending === !1 && (this._$ES = this._$EP());
   }
-  C(t, e, { useDefault: i, reflect: s, wrapped: n }, o) {
-    i && !(this._$Ej ??= /* @__PURE__ */ new Map()).has(t) && (this._$Ej.set(t, o ?? e ?? this[t]), n !== !0 || o !== void 0) || (this._$AL.has(t) || (this.hasUpdated || i || (e = void 0), this._$AL.set(t, e)), s === !0 && this._$Em !== t && (this._$Eq ??= /* @__PURE__ */ new Set()).add(t));
+  C(t, e, { useDefault: i, reflect: r, wrapped: n }, o) {
+    i && !(this._$Ej ??= /* @__PURE__ */ new Map()).has(t) && (this._$Ej.set(t, o ?? e ?? this[t]), n !== !0 || o !== void 0) || (this._$AL.has(t) || (this.hasUpdated || i || (e = void 0), this._$AL.set(t, e)), r === !0 && this._$Em !== t && (this._$Eq ??= /* @__PURE__ */ new Set()).add(t));
   }
   async _$EP() {
     this.isUpdatePending = !0;
@@ -213,13 +213,13 @@ let b = class extends HTMLElement {
     if (!this.isUpdatePending) return;
     if (!this.hasUpdated) {
       if (this.renderRoot ??= this.createRenderRoot(), this._$Ep) {
-        for (const [s, n] of this._$Ep) this[s] = n;
+        for (const [r, n] of this._$Ep) this[r] = n;
         this._$Ep = void 0;
       }
       const i = this.constructor.elementProperties;
-      if (i.size > 0) for (const [s, n] of i) {
-        const { wrapped: o } = n, l = this[s];
-        o !== !0 || this._$AL.has(s) || l === void 0 || this.C(s, void 0, n, l);
+      if (i.size > 0) for (const [r, n] of i) {
+        const { wrapped: o } = n, l = this[r];
+        o !== !0 || this._$AL.has(r) || l === void 0 || this.C(r, void 0, n, l);
       }
     }
     let t = !1;
@@ -256,75 +256,75 @@ let b = class extends HTMLElement {
   firstUpdated(t) {
   }
 };
-b.elementStyles = [], b.shadowRootOptions = { mode: "open" }, b[S("elementProperties")] = /* @__PURE__ */ new Map(), b[S("finalized")] = /* @__PURE__ */ new Map(), Ct?.({ ReactiveElement: b }), (D.reactiveElementVersions ??= []).push("2.1.2");
+w.elementStyles = [], w.shadowRootOptions = { mode: "open" }, w[P("elementProperties")] = /* @__PURE__ */ new Map(), w[P("finalized")] = /* @__PURE__ */ new Map(), Ot?.({ ReactiveElement: w }), (z.reactiveElementVersions ??= []).push("2.1.2");
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const G = globalThis, it = (r) => r, L = G.trustedTypes, st = L ? L.createPolicy("lit-html", { createHTML: (r) => r }) : void 0, mt = "$lit$", g = `lit$${Math.random().toFixed(9).slice(2)}$`, gt = "?" + g, Tt = `<${gt}>`, y = document, M = () => y.createComment(""), C = (r) => r === null || typeof r != "object" && typeof r != "function", X = Array.isArray, Ot = (r) => X(r) || typeof r?.[Symbol.iterator] == "function", B = `[ 	
-\f\r]`, A = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, rt = /-->/g, nt = />/g, $ = RegExp(`>|${B}(?:([^\\s"'>=/]+)(${B}*=${B}*(?:[^ 	
-\f\r"'\`<>=]|("|')|))|$)`, "g"), ot = /'/g, at = /"/g, $t = /^(?:script|style|textarea|title)$/i, vt = (r) => (t, ...e) => ({ _$litType$: r, strings: t, values: e }), u = vt(1), k = vt(2), w = Symbol.for("lit-noChange"), c = Symbol.for("lit-nothing"), lt = /* @__PURE__ */ new WeakMap(), v = y.createTreeWalker(y, 129);
-function yt(r, t) {
-  if (!X(r) || !r.hasOwnProperty("raw")) throw Error("invalid template strings array");
-  return st !== void 0 ? st.createHTML(t) : t;
+const X = globalThis, st = (s) => s, L = X.trustedTypes, rt = L ? L.createPolicy("lit-html", { createHTML: (s) => s }) : void 0, $t = "$lit$", g = `lit$${Math.random().toFixed(9).slice(2)}$`, vt = "?" + g, Nt = `<${vt}>`, _ = document, C = () => _.createComment(""), T = (s) => s === null || typeof s != "object" && typeof s != "function", Z = Array.isArray, Rt = (s) => Z(s) || typeof s?.[Symbol.iterator] == "function", I = `[ 	
+\f\r]`, E = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, nt = /-->/g, ot = />/g, v = RegExp(`>|${I}(?:([^\\s"'>=/]+)(${I}*=${I}*(?:[^ 	
+\f\r"'\`<>=]|("|')|))|$)`, "g"), at = /'/g, lt = /"/g, yt = /^(?:script|style|textarea|title)$/i, bt = (s) => (t, ...e) => ({ _$litType$: s, strings: t, values: e }), u = bt(1), y = bt(2), A = Symbol.for("lit-noChange"), c = Symbol.for("lit-nothing"), ht = /* @__PURE__ */ new WeakMap(), b = _.createTreeWalker(_, 129);
+function _t(s, t) {
+  if (!Z(s) || !s.hasOwnProperty("raw")) throw Error("invalid template strings array");
+  return rt !== void 0 ? rt.createHTML(t) : t;
 }
-const Nt = (r, t) => {
-  const e = r.length - 1, i = [];
-  let s, n = t === 2 ? "<svg>" : t === 3 ? "<math>" : "", o = A;
+const Ut = (s, t) => {
+  const e = s.length - 1, i = [];
+  let r, n = t === 2 ? "<svg>" : t === 3 ? "<math>" : "", o = E;
   for (let l = 0; l < e; l++) {
-    const a = r[l];
-    let p, h, d = -1, f = 0;
-    for (; f < a.length && (o.lastIndex = f, h = o.exec(a), h !== null); ) f = o.lastIndex, o === A ? h[1] === "!--" ? o = rt : h[1] !== void 0 ? o = nt : h[2] !== void 0 ? ($t.test(h[2]) && (s = RegExp("</" + h[2], "g")), o = $) : h[3] !== void 0 && (o = $) : o === $ ? h[0] === ">" ? (o = s ?? A, d = -1) : h[1] === void 0 ? d = -2 : (d = o.lastIndex - h[2].length, p = h[1], o = h[3] === void 0 ? $ : h[3] === '"' ? at : ot) : o === at || o === ot ? o = $ : o === rt || o === nt ? o = A : (o = $, s = void 0);
-    const m = o === $ && r[l + 1].startsWith("/>") ? " " : "";
-    n += o === A ? a + Tt : d >= 0 ? (i.push(p), a.slice(0, d) + mt + a.slice(d) + g + m) : a + g + (d === -2 ? l : m);
+    const a = s[l];
+    let d, f, p = -1, m = 0;
+    for (; m < a.length && (o.lastIndex = m, f = o.exec(a), f !== null); ) m = o.lastIndex, o === E ? f[1] === "!--" ? o = nt : f[1] !== void 0 ? o = ot : f[2] !== void 0 ? (yt.test(f[2]) && (r = RegExp("</" + f[2], "g")), o = v) : f[3] !== void 0 && (o = v) : o === v ? f[0] === ">" ? (o = r ?? E, p = -1) : f[1] === void 0 ? p = -2 : (p = o.lastIndex - f[2].length, d = f[1], o = f[3] === void 0 ? v : f[3] === '"' ? lt : at) : o === lt || o === at ? o = v : o === nt || o === ot ? o = E : (o = v, r = void 0);
+    const h = o === v && s[l + 1].startsWith("/>") ? " " : "";
+    n += o === E ? a + Nt : p >= 0 ? (i.push(d), a.slice(0, p) + $t + a.slice(p) + g + h) : a + g + (p === -2 ? l : h);
   }
-  return [yt(r, n + (r[e] || "<?>") + (t === 2 ? "</svg>" : t === 3 ? "</math>" : "")), i];
+  return [_t(s, n + (s[e] || "<?>") + (t === 2 ? "</svg>" : t === 3 ? "</math>" : "")), i];
 };
-class T {
+class O {
   constructor({ strings: t, _$litType$: e }, i) {
-    let s;
+    let r;
     this.parts = [];
     let n = 0, o = 0;
-    const l = t.length - 1, a = this.parts, [p, h] = Nt(t, e);
-    if (this.el = T.createElement(p, i), v.currentNode = this.el.content, e === 2 || e === 3) {
-      const d = this.el.content.firstChild;
-      d.replaceWith(...d.childNodes);
+    const l = t.length - 1, a = this.parts, [d, f] = Ut(t, e);
+    if (this.el = O.createElement(d, i), b.currentNode = this.el.content, e === 2 || e === 3) {
+      const p = this.el.content.firstChild;
+      p.replaceWith(...p.childNodes);
     }
-    for (; (s = v.nextNode()) !== null && a.length < l; ) {
-      if (s.nodeType === 1) {
-        if (s.hasAttributes()) for (const d of s.getAttributeNames()) if (d.endsWith(mt)) {
-          const f = h[o++], m = s.getAttribute(d).split(g), N = /([.?@])?(.*)/.exec(f);
-          a.push({ type: 1, index: n, name: N[2], strings: m, ctor: N[1] === "." ? Rt : N[1] === "?" ? Ht : N[1] === "@" ? Lt : z }), s.removeAttribute(d);
-        } else d.startsWith(g) && (a.push({ type: 6, index: n }), s.removeAttribute(d));
-        if ($t.test(s.tagName)) {
-          const d = s.textContent.split(g), f = d.length - 1;
-          if (f > 0) {
-            s.textContent = L ? L.emptyScript : "";
-            for (let m = 0; m < f; m++) s.append(d[m], M()), v.nextNode(), a.push({ type: 2, index: ++n });
-            s.append(d[f], M());
+    for (; (r = b.nextNode()) !== null && a.length < l; ) {
+      if (r.nodeType === 1) {
+        if (r.hasAttributes()) for (const p of r.getAttributeNames()) if (p.endsWith($t)) {
+          const m = f[o++], h = r.getAttribute(p).split(g), $ = /([.?@])?(.*)/.exec(m);
+          a.push({ type: 1, index: n, name: $[2], strings: h, ctor: $[1] === "." ? Lt : $[1] === "?" ? jt : $[1] === "@" ? zt : D }), r.removeAttribute(p);
+        } else p.startsWith(g) && (a.push({ type: 6, index: n }), r.removeAttribute(p));
+        if (yt.test(r.tagName)) {
+          const p = r.textContent.split(g), m = p.length - 1;
+          if (m > 0) {
+            r.textContent = L ? L.emptyScript : "";
+            for (let h = 0; h < m; h++) r.append(p[h], C()), b.nextNode(), a.push({ type: 2, index: ++n });
+            r.append(p[m], C());
           }
         }
-      } else if (s.nodeType === 8) if (s.data === gt) a.push({ type: 2, index: n });
+      } else if (r.nodeType === 8) if (r.data === vt) a.push({ type: 2, index: n });
       else {
-        let d = -1;
-        for (; (d = s.data.indexOf(g, d + 1)) !== -1; ) a.push({ type: 7, index: n }), d += g.length - 1;
+        let p = -1;
+        for (; (p = r.data.indexOf(g, p + 1)) !== -1; ) a.push({ type: 7, index: n }), p += g.length - 1;
       }
       n++;
     }
   }
   static createElement(t, e) {
-    const i = y.createElement("template");
+    const i = _.createElement("template");
     return i.innerHTML = t, i;
   }
 }
-function x(r, t, e = r, i) {
-  if (t === w) return t;
-  let s = i !== void 0 ? e._$Co?.[i] : e._$Cl;
-  const n = C(t) ? void 0 : t._$litDirective$;
-  return s?.constructor !== n && (s?._$AO?.(!1), n === void 0 ? s = void 0 : (s = new n(r), s._$AT(r, e, i)), i !== void 0 ? (e._$Co ??= [])[i] = s : e._$Cl = s), s !== void 0 && (t = x(r, s._$AS(r, t.values), s, i)), t;
+function k(s, t, e = s, i) {
+  if (t === A) return t;
+  let r = i !== void 0 ? e._$Co?.[i] : e._$Cl;
+  const n = T(t) ? void 0 : t._$litDirective$;
+  return r?.constructor !== n && (r?._$AO?.(!1), n === void 0 ? r = void 0 : (r = new n(s), r._$AT(s, e, i)), i !== void 0 ? (e._$Co ??= [])[i] = r : e._$Cl = r), r !== void 0 && (t = k(s, r._$AS(s, t.values), r, i)), t;
 }
-class Ut {
+class Ht {
   constructor(t, e) {
     this._$AV = [], this._$AN = void 0, this._$AD = t, this._$AM = e;
   }
@@ -335,29 +335,29 @@ class Ut {
     return this._$AM._$AU;
   }
   u(t) {
-    const { el: { content: e }, parts: i } = this._$AD, s = (t?.creationScope ?? y).importNode(e, !0);
-    v.currentNode = s;
-    let n = v.nextNode(), o = 0, l = 0, a = i[0];
+    const { el: { content: e }, parts: i } = this._$AD, r = (t?.creationScope ?? _).importNode(e, !0);
+    b.currentNode = r;
+    let n = b.nextNode(), o = 0, l = 0, a = i[0];
     for (; a !== void 0; ) {
       if (o === a.index) {
-        let p;
-        a.type === 2 ? p = new O(n, n.nextSibling, this, t) : a.type === 1 ? p = new a.ctor(n, a.name, a.strings, this, t) : a.type === 6 && (p = new jt(n, this, t)), this._$AV.push(p), a = i[++l];
+        let d;
+        a.type === 2 ? d = new N(n, n.nextSibling, this, t) : a.type === 1 ? d = new a.ctor(n, a.name, a.strings, this, t) : a.type === 6 && (d = new Dt(n, this, t)), this._$AV.push(d), a = i[++l];
       }
-      o !== a?.index && (n = v.nextNode(), o++);
+      o !== a?.index && (n = b.nextNode(), o++);
     }
-    return v.currentNode = y, s;
+    return b.currentNode = _, r;
   }
   p(t) {
     let e = 0;
     for (const i of this._$AV) i !== void 0 && (i.strings !== void 0 ? (i._$AI(t, i, e), e += i.strings.length - 2) : i._$AI(t[e])), e++;
   }
 }
-class O {
+class N {
   get _$AU() {
     return this._$AM?._$AU ?? this._$Cv;
   }
-  constructor(t, e, i, s) {
-    this.type = 2, this._$AH = c, this._$AN = void 0, this._$AA = t, this._$AB = e, this._$AM = i, this.options = s, this._$Cv = s?.isConnected ?? !0;
+  constructor(t, e, i, r) {
+    this.type = 2, this._$AH = c, this._$AN = void 0, this._$AA = t, this._$AB = e, this._$AM = i, this.options = r, this._$Cv = r?.isConnected ?? !0;
   }
   get parentNode() {
     let t = this._$AA.parentNode;
@@ -371,7 +371,7 @@ class O {
     return this._$AB;
   }
   _$AI(t, e = this) {
-    t = x(this, t, e), C(t) ? t === c || t == null || t === "" ? (this._$AH !== c && this._$AR(), this._$AH = c) : t !== this._$AH && t !== w && this._(t) : t._$litType$ !== void 0 ? this.$(t) : t.nodeType !== void 0 ? this.T(t) : Ot(t) ? this.k(t) : this._(t);
+    t = k(this, t, e), T(t) ? t === c || t == null || t === "" ? (this._$AH !== c && this._$AR(), this._$AH = c) : t !== this._$AH && t !== A && this._(t) : t._$litType$ !== void 0 ? this.$(t) : t.nodeType !== void 0 ? this.T(t) : Rt(t) ? this.k(t) : this._(t);
   }
   O(t) {
     return this._$AA.parentNode.insertBefore(t, this._$AB);
@@ -380,63 +380,63 @@ class O {
     this._$AH !== t && (this._$AR(), this._$AH = this.O(t));
   }
   _(t) {
-    this._$AH !== c && C(this._$AH) ? this._$AA.nextSibling.data = t : this.T(y.createTextNode(t)), this._$AH = t;
+    this._$AH !== c && T(this._$AH) ? this._$AA.nextSibling.data = t : this.T(_.createTextNode(t)), this._$AH = t;
   }
   $(t) {
-    const { values: e, _$litType$: i } = t, s = typeof i == "number" ? this._$AC(t) : (i.el === void 0 && (i.el = T.createElement(yt(i.h, i.h[0]), this.options)), i);
-    if (this._$AH?._$AD === s) this._$AH.p(e);
+    const { values: e, _$litType$: i } = t, r = typeof i == "number" ? this._$AC(t) : (i.el === void 0 && (i.el = O.createElement(_t(i.h, i.h[0]), this.options)), i);
+    if (this._$AH?._$AD === r) this._$AH.p(e);
     else {
-      const n = new Ut(s, this), o = n.u(this.options);
+      const n = new Ht(r, this), o = n.u(this.options);
       n.p(e), this.T(o), this._$AH = n;
     }
   }
   _$AC(t) {
-    let e = lt.get(t.strings);
-    return e === void 0 && lt.set(t.strings, e = new T(t)), e;
+    let e = ht.get(t.strings);
+    return e === void 0 && ht.set(t.strings, e = new O(t)), e;
   }
   k(t) {
-    X(this._$AH) || (this._$AH = [], this._$AR());
+    Z(this._$AH) || (this._$AH = [], this._$AR());
     const e = this._$AH;
-    let i, s = 0;
-    for (const n of t) s === e.length ? e.push(i = new O(this.O(M()), this.O(M()), this, this.options)) : i = e[s], i._$AI(n), s++;
-    s < e.length && (this._$AR(i && i._$AB.nextSibling, s), e.length = s);
+    let i, r = 0;
+    for (const n of t) r === e.length ? e.push(i = new N(this.O(C()), this.O(C()), this, this.options)) : i = e[r], i._$AI(n), r++;
+    r < e.length && (this._$AR(i && i._$AB.nextSibling, r), e.length = r);
   }
   _$AR(t = this._$AA.nextSibling, e) {
     for (this._$AP?.(!1, !0, e); t !== this._$AB; ) {
-      const i = it(t).nextSibling;
-      it(t).remove(), t = i;
+      const i = st(t).nextSibling;
+      st(t).remove(), t = i;
     }
   }
   setConnected(t) {
     this._$AM === void 0 && (this._$Cv = t, this._$AP?.(t));
   }
 }
-class z {
+class D {
   get tagName() {
     return this.element.tagName;
   }
   get _$AU() {
     return this._$AM._$AU;
   }
-  constructor(t, e, i, s, n) {
-    this.type = 1, this._$AH = c, this._$AN = void 0, this.element = t, this.name = e, this._$AM = s, this.options = n, i.length > 2 || i[0] !== "" || i[1] !== "" ? (this._$AH = Array(i.length - 1).fill(new String()), this.strings = i) : this._$AH = c;
+  constructor(t, e, i, r, n) {
+    this.type = 1, this._$AH = c, this._$AN = void 0, this.element = t, this.name = e, this._$AM = r, this.options = n, i.length > 2 || i[0] !== "" || i[1] !== "" ? (this._$AH = Array(i.length - 1).fill(new String()), this.strings = i) : this._$AH = c;
   }
-  _$AI(t, e = this, i, s) {
+  _$AI(t, e = this, i, r) {
     const n = this.strings;
     let o = !1;
-    if (n === void 0) t = x(this, t, e, 0), o = !C(t) || t !== this._$AH && t !== w, o && (this._$AH = t);
+    if (n === void 0) t = k(this, t, e, 0), o = !T(t) || t !== this._$AH && t !== A, o && (this._$AH = t);
     else {
       const l = t;
-      let a, p;
-      for (t = n[0], a = 0; a < n.length - 1; a++) p = x(this, l[i + a], e, a), p === w && (p = this._$AH[a]), o ||= !C(p) || p !== this._$AH[a], p === c ? t = c : t !== c && (t += (p ?? "") + n[a + 1]), this._$AH[a] = p;
+      let a, d;
+      for (t = n[0], a = 0; a < n.length - 1; a++) d = k(this, l[i + a], e, a), d === A && (d = this._$AH[a]), o ||= !T(d) || d !== this._$AH[a], d === c ? t = c : t !== c && (t += (d ?? "") + n[a + 1]), this._$AH[a] = d;
     }
-    o && !s && this.j(t);
+    o && !r && this.j(t);
   }
   j(t) {
     t === c ? this.element.removeAttribute(this.name) : this.element.setAttribute(this.name, t ?? "");
   }
 }
-class Rt extends z {
+class Lt extends D {
   constructor() {
     super(...arguments), this.type = 3;
   }
@@ -444,7 +444,7 @@ class Rt extends z {
     this.element[this.name] = t === c ? void 0 : t;
   }
 }
-class Ht extends z {
+class jt extends D {
   constructor() {
     super(...arguments), this.type = 4;
   }
@@ -452,20 +452,20 @@ class Ht extends z {
     this.element.toggleAttribute(this.name, !!t && t !== c);
   }
 }
-class Lt extends z {
-  constructor(t, e, i, s, n) {
-    super(t, e, i, s, n), this.type = 5;
+class zt extends D {
+  constructor(t, e, i, r, n) {
+    super(t, e, i, r, n), this.type = 5;
   }
   _$AI(t, e = this) {
-    if ((t = x(this, t, e, 0) ?? c) === w) return;
-    const i = this._$AH, s = t === c && i !== c || t.capture !== i.capture || t.once !== i.once || t.passive !== i.passive, n = t !== c && (i === c || s);
-    s && this.element.removeEventListener(this.name, this, i), n && this.element.addEventListener(this.name, this, t), this._$AH = t;
+    if ((t = k(this, t, e, 0) ?? c) === A) return;
+    const i = this._$AH, r = t === c && i !== c || t.capture !== i.capture || t.once !== i.once || t.passive !== i.passive, n = t !== c && (i === c || r);
+    r && this.element.removeEventListener(this.name, this, i), n && this.element.addEventListener(this.name, this, t), this._$AH = t;
   }
   handleEvent(t) {
     typeof this._$AH == "function" ? this._$AH.call(this.options?.host ?? this.element, t) : this._$AH.handleEvent(t);
   }
 }
-class jt {
+class Dt {
   constructor(t, e, i) {
     this.element = t, this.type = 6, this._$AN = void 0, this._$AM = e, this.options = i;
   }
@@ -473,27 +473,27 @@ class jt {
     return this._$AM._$AU;
   }
   _$AI(t) {
-    x(this, t);
+    k(this, t);
   }
 }
-const Dt = G.litHtmlPolyfillSupport;
-Dt?.(T, O), (G.litHtmlVersions ??= []).push("3.3.3");
-const zt = (r, t, e) => {
+const Bt = X.litHtmlPolyfillSupport;
+Bt?.(O, N), (X.litHtmlVersions ??= []).push("3.3.3");
+const Ft = (s, t, e) => {
   const i = e?.renderBefore ?? t;
-  let s = i._$litPart$;
-  if (s === void 0) {
+  let r = i._$litPart$;
+  if (r === void 0) {
     const n = e?.renderBefore ?? null;
-    i._$litPart$ = s = new O(t.insertBefore(M(), n), n, void 0, e ?? {});
+    i._$litPart$ = r = new N(t.insertBefore(C(), n), n, void 0, e ?? {});
   }
-  return s._$AI(r), s;
+  return r._$AI(s), r;
 };
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const Z = globalThis;
-class P extends b {
+const Y = globalThis;
+class M extends w {
   constructor() {
     super(...arguments), this.renderOptions = { host: this }, this._$Do = void 0;
   }
@@ -503,7 +503,7 @@ class P extends b {
   }
   update(t) {
     const e = this.render();
-    this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(t), this._$Do = zt(e, this.renderRoot, this.renderOptions);
+    this.hasUpdated || (this.renderOptions.isConnected = this.isConnected), super.update(t), this._$Do = Ft(e, this.renderRoot, this.renderOptions);
   }
   connectedCallback() {
     super.connectedCallback(), this._$Do?.setConnected(!0);
@@ -512,76 +512,79 @@ class P extends b {
     super.disconnectedCallback(), this._$Do?.setConnected(!1);
   }
   render() {
-    return w;
+    return A;
   }
 }
-P._$litElement$ = !0, P.finalized = !0, Z.litElementHydrateSupport?.({ LitElement: P });
-const Bt = Z.litElementPolyfillSupport;
-Bt?.({ LitElement: P });
-(Z.litElementVersions ??= []).push("4.2.2");
-function ht(r) {
-  return r.length ? r[r.length - 1].minute : 1440;
+M._$litElement$ = !0, M.finalized = !0, Y.litElementHydrateSupport?.({ LitElement: M });
+const It = Y.litElementPolyfillSupport;
+It?.({ LitElement: M });
+(Y.litElementVersions ??= []).push("4.2.2");
+function ct(s) {
+  return s.length ? s[s.length - 1].minute : 1440;
 }
-function _(r, t) {
-  const e = t.width - t.padLeft - t.padRight, i = Math.min(Math.max(r, 0), t.totalMinutes);
+function x(s, t) {
+  const e = t.width - t.padLeft - t.padRight, i = Math.min(Math.max(s, 0), t.totalMinutes);
   return t.padLeft + i / t.totalMinutes * e;
 }
-function Ft(r, t) {
-  const e = t.width - t.padLeft - t.padRight, i = (r - t.padLeft) / e;
+function Wt(s, t) {
+  const e = t.width - t.padLeft - t.padRight, i = (s - t.padLeft) / e;
   return Math.min(Math.max(i, 0), 1) * t.totalMinutes;
 }
-function q(r, t) {
-  if (!r.length) return -1;
-  let e = 0, i = r.length - 1;
+function V(s, t) {
+  if (!s.length) return -1;
+  let e = 0, i = s.length - 1;
   for (; e < i; ) {
-    const s = e + i >> 1;
-    r[s].minute < t ? e = s + 1 : i = s;
+    const r = e + i >> 1;
+    s[r].minute < t ? e = r + 1 : i = r;
   }
-  return e > 0 && t - r[e - 1].minute <= r[e].minute - t ? e - 1 : e;
+  return e > 0 && t - s[e - 1].minute <= s[e].minute - t ? e - 1 : e;
 }
-function U(r) {
-  return r.slice(11, 16);
+function R(s) {
+  return s.slice(11, 16);
 }
-function It(r, t) {
-  const e = q(r, t);
+function qt(s, t) {
+  const e = V(s, t);
   if (e < 0) throw new Error("no samples");
-  const i = r[e], s = Date.parse(i.t) + (t - i.minute) * 6e4, n = i.t.slice(19), o = Vt(n);
-  return new Date(s + o * 6e4).toISOString().slice(0, 19) + n;
+  const i = s[e], r = Date.parse(i.t) + (t - i.minute) * 6e4, n = i.t.slice(19), o = Vt(n);
+  return new Date(r + o * 6e4).toISOString().slice(0, 19) + n;
 }
-function Vt(r) {
-  const t = /^([+-])(\d{2}):(\d{2})$/.exec(r);
+function Vt(s) {
+  const t = /^([+-])(\d{2}):(\d{2})$/.exec(s);
   return t ? (t[1] === "-" ? -1 : 1) * (parseInt(t[2], 10) * 60 + parseInt(t[3], 10)) : 0;
 }
-function E(r, t) {
-  const e = t.height - t.padTop - t.padBottom, i = Math.min(Math.max(r, 0), 100);
+function Jt(s, t = 5) {
+  return Math.round(s / t) * t;
+}
+function S(s, t) {
+  const e = t.height - t.padTop - t.padBottom, i = Math.min(Math.max(s, 0), 100);
   return t.padTop + (1 - i / 100) * e;
 }
-function qt(r, t) {
-  return r.map((e, i) => `${i ? "L" : "M"}${_(e.minute, t).toFixed(1)},${E(e.brightness_pct, t).toFixed(1)}`).join("");
+function Kt(s, t) {
+  return s.map((e, i) => `${i ? "L" : "M"}${x(e.minute, t).toFixed(1)},${S(e.brightness_pct, t).toFixed(1)}`).join("");
 }
-function Wt(r, t = 3) {
-  if (!r.length) return [];
-  const e = r[r.length - 1].minute || 1, i = [];
-  for (let n = 0; n < r.length; n += t) {
-    const o = r[n];
+function Gt(s, t = 3) {
+  if (!s.length) return [];
+  const e = s[s.length - 1].minute || 1, i = [];
+  for (let n = 0; n < s.length; n += t) {
+    const o = s[n];
     i.push({ offset: o.minute / e, rgb: `rgb(${o.rgb_color.join(",")})` });
   }
-  const s = r[r.length - 1];
-  return i[i.length - 1].offset !== 1 && i.push({ offset: 1, rgb: `rgb(${s.rgb_color.join(",")})` }), i;
+  const r = s[s.length - 1];
+  return i[i.length - 1].offset !== 1 && i.push({ offset: 1, rgb: `rgb(${r.rgb_color.join(",")})` }), i;
 }
-function Jt(r, t = 3) {
+function Xt(s, t = 3) {
   const e = [];
-  for (let i = 0; i <= r; i += t * 60) e.push(i);
+  for (let i = 0; i <= s; i += t * 60) e.push(i);
   return e;
 }
-const Kt = {
+const Zt = {
   now: () => performance.now(),
-  schedule: (r) => requestAnimationFrame(() => r()),
-  cancel: (r) => cancelAnimationFrame(r)
+  schedule: (s) => requestAnimationFrame(() => s()),
+  cancel: (s) => cancelAnimationFrame(s)
 };
-class Gt {
-  constructor(t, e, i, s = Kt) {
-    this.totalMinutes = t, this.durationMs = e, this.onTick = i, this.clock = s, this.minute = 0, this.playing = !1, this.startedAt = 0, this.startMinute = 0, this.handle = null;
+class Yt {
+  constructor(t, e, i, r = Zt) {
+    this.totalMinutes = t, this.durationMs = e, this.onTick = i, this.clock = r, this.minute = 0, this.playing = !1, this.startedAt = 0, this.startMinute = 0, this.handle = null;
   }
   play() {
     this.playing || (this.minute >= this.totalMinutes && (this.minute = 0), this.playing = !0, this.startedAt = this.clock.now(), this.startMinute = this.minute, this.loop());
@@ -615,9 +618,9 @@ class Gt {
     });
   }
 }
-class Xt {
-  constructor(t, e, i = () => Date.now(), s = setTimeout, n = clearTimeout) {
-    this.intervalMs = t, this.send = e, this.now = i, this.setTimer = s, this.clearTimer = n, this.last = -1 / 0, this.pending = null, this.timer = null;
+class Qt {
+  constructor(t, e, i = () => Date.now(), r = (o, l) => setTimeout(o, l), n = (o) => clearTimeout(o)) {
+    this.intervalMs = t, this.send = e, this.now = i, this.setTimer = r, this.clearTimer = n, this.last = -1 / 0, this.pending = null, this.timer = null;
   }
   push(t) {
     const e = this.last + this.intervalMs - this.now();
@@ -638,75 +641,82 @@ class Xt {
     this.last = this.now(), this.send(t);
   }
 }
-function ct(r, t) {
+function dt(s, t) {
   let e = "string", i;
-  if (r.selector) {
-    const s = Object.keys(r.selector)[0];
-    s === "select" ? (e = "select", i = r.selector.select.options) : s === "entity" ? e = "entity" : s === "color_rgb" && (e = "color_rgb");
-  } else (r.type === "boolean" || r.type === "integer" || r.type === "float") && (e = r.type);
-  return { name: r.name, section: t, kind: e, min: r.valueMin, max: r.valueMax, options: i, value: r.default };
+  if (s.selector) {
+    const r = Object.keys(s.selector)[0];
+    r === "select" ? (e = "select", i = s.selector.select.options) : r === "entity" ? e = "entity" : r === "color_rgb" && (e = "color_rgb");
+  } else (s.type === "boolean" || s.type === "integer" || s.type === "float") && (e = s.type);
+  return { name: s.name, section: t, kind: e, min: s.valueMin, max: s.valueMax, options: i, value: s.default };
 }
-function dt(r) {
-  if (!r.data_schema) throw new Error("This profile has no editable options (YAML-configured?)");
-  const t = { flowId: r.flow_id, sections: [], fields: [] };
-  for (const e of r.data_schema)
+function pt(s) {
+  if (!s.data_schema) throw new Error("This profile has no editable options (YAML-configured?)");
+  const t = { flowId: s.flow_id, sections: [], fields: [] };
+  for (const e of s.data_schema)
     if (e.type === "expandable") {
       t.sections.push(e.name);
-      for (const i of e.schema ?? []) t.fields.push(ct(i, e.name));
+      for (const i of e.schema ?? []) t.fields.push(dt(i, e.name));
     } else
-      t.fields.push(ct(e, null));
+      t.fields.push(dt(e, null));
   return t;
 }
-function R(r) {
-  return Object.fromEntries(r.fields.map((t) => [t.name, t.value]));
+function U(s) {
+  return Object.fromEntries(s.fields.map((t) => [t.name, t.value]));
 }
-function Zt(r, t) {
-  return JSON.stringify(r) === JSON.stringify(t);
+function te(s, t) {
+  return JSON.stringify(s) === JSON.stringify(t);
 }
-function Yt(r, t) {
+function ee(s, t) {
   const e = {};
-  for (const [i, s] of Object.entries(t)) Zt(r[i], s) || (e[i] = s);
+  for (const [i, r] of Object.entries(t)) te(s[i], r) || (e[i] = r);
   return e;
 }
-function Qt(r, t) {
-  const e = Object.fromEntries(r.sections.map((i) => [i, {}]));
-  for (const i of r.fields) {
-    const s = i.name in t ? t[i.name] : i.value;
-    i.section ? e[i.section][i.name] = s : e[i.name] = s;
+function ie(s, t) {
+  const e = Object.fromEntries(s.sections.map((i) => [i, {}]));
+  for (const i of s.fields) {
+    const r = i.name in t ? t[i.name] : i.value;
+    i.section ? e[i.section][i.name] = r : e[i.name] = r;
   }
   return e;
 }
-function te(r, t) {
-  if (r.kind === "boolean") return [!!t, null];
+function se(s, t) {
+  if (s.kind === "boolean") return [!!t, null];
   const e = String(t).trim();
-  if (r.kind === "integer" || r.kind === "float") {
+  if (s.kind === "integer" || s.kind === "float") {
     if (e === "") return [null, "required"];
-    const i = r.kind === "integer" ? Number(e) : parseFloat(e);
-    return !Number.isFinite(i) || r.kind === "integer" && !Number.isInteger(i) ? [e, `expected ${r.kind === "integer" ? "a whole number" : "a number"}`] : r.min !== void 0 && i < r.min ? [i, `minimum ${r.min}`] : r.max !== void 0 && i > r.max ? [i, `maximum ${r.max}`] : [i, null];
+    const i = s.kind === "integer" ? Number(e) : parseFloat(e);
+    return !Number.isFinite(i) || s.kind === "integer" && !Number.isInteger(i) ? [e, `expected ${s.kind === "integer" ? "a whole number" : "a number"}`] : s.min !== void 0 && i < s.min ? [i, `minimum ${s.min}`] : s.max !== void 0 && i > s.max ? [i, `maximum ${s.max}`] : [i, null];
   }
-  if (r.kind === "select") return r.options?.includes(e) ? [e, null] : [e, "not an allowed value"];
-  if (r.kind === "entity") return [e.split(",").map((i) => i.trim()).filter(Boolean), null];
-  if (r.kind === "color_rgb") {
-    const i = e.split(",").map((s) => Number(s.trim()));
-    return i.length !== 3 || i.some((s) => !Number.isInteger(s) || s < 0 || s > 255) ? [e, "expected R,G,B (0-255)"] : [i, null];
+  if (s.kind === "select") return s.options?.includes(e) ? [e, null] : [e, "not an allowed value"];
+  if (s.kind === "entity") return [e.split(",").map((i) => i.trim()).filter(Boolean), null];
+  if (s.kind === "color_rgb") {
+    const i = e.split(",").map((r) => Number(r.trim()));
+    return i.length !== 3 || i.some((r) => !Number.isInteger(r) || r < 0 || r > 255) ? [e, "expected R,G,B (0-255)"] : [i, null];
   }
   return [e, null];
 }
-function F(r) {
-  return r == null ? "—" : Array.isArray(r) ? r.join(", ") : String(r);
+function W(s) {
+  return s == null ? "—" : Array.isArray(s) ? s.join(", ") : String(s);
 }
-const I = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight: 12, padTop: 14, padBottom: 58 }, pt = 18, ee = [15, 30, 60, 120], ie = { sunrise: "sunrise", sunset: "sunset", solar_noon: "noon", solar_midnight: "midnight" }, j = class j extends P {
+const ut = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight: 12, padTop: 14, padBottom: 58 }, ft = 18, re = [15, 30, 60, 120], ne = { sunrise: "sunrise", sunset: "sunset", solar_noon: "noon", solar_midnight: "midnight" }, j = class j extends M {
   constructor() {
-    super(), this.curveTimer = null, this.pointTimer = null, this.unsubPreview = null, this.loaded = !1, this.profiles = [], this.selected = "", this.form = null, this.edited = {}, this.fieldErrors = {}, this.serverErrors = {}, this.curve = null, this.date = "", this.sleep = !1, this.minute = 12 * 60, this.playing = !1, this.duration = 30, this.point = null, this.preview = "off", this.message = "", this.confirming = !1, this.busy = !1, this.playback = new Gt(1440, 3e4, (t, e) => {
+    super(), this.curveTimer = null, this.pointTimer = null, this.unsubPreview = null, this.loaded = !1, this.resize = new ResizeObserver((t) => {
+      const e = Math.round(t[0].contentRect.width);
+      e > 0 && Math.abs(e - this.chartWidth) > 4 && (this.chartWidth = Math.min(Math.max(e, 300), 1400));
+    }), this.profiles = [], this.selected = "", this.form = null, this.edited = {}, this.fieldErrors = {}, this.serverErrors = {}, this.curve = null, this.date = "", this.sleep = !1, this.minute = 12 * 60, this.playing = !1, this.duration = 30, this.point = null, this.preview = "off", this.message = "", this.confirming = !1, this.busy = !1, this.chartWidth = 1e3, this.playback = new Yt(1440, 3e4, (t, e) => {
       this.minute = t, this.playing = e, this.schedulePoint(e ? 120 : 0);
-    }), this.previewSender = new Xt(1e3, (t) => void this.sendPreview(t));
+    }), this.playback.minute = this.minute, this.previewSender = new Qt(1e3, (t) => void this.sendPreview(t));
   }
   // ------------------------------------------------------------- lifecycle
   updated(t) {
     t.has("hass") && this.hass && !this.loaded && (this.loaded = !0, this.loadProfiles());
   }
+  firstUpdated() {
+    const t = this.renderRoot.querySelector(".chartcard");
+    t && this.resize.observe(t);
+  }
   disconnectedCallback() {
-    super.disconnectedCallback(), this.playback.pause(), this.stopPreview();
+    super.disconnectedCallback(), this.resize.disconnect(), this.playback.pause(), this.stopPreview();
   }
   ws(t) {
     return this.hass.connection.sendMessagePromise(t);
@@ -716,8 +726,8 @@ const I = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight: 
     try {
       const e = await this.ws({ type: "adaptive_lighting/sim/profiles" });
       this.profiles = e.profiles;
-      const i = t && this.profiles.some((n) => n.entry_id === this.selected), s = this.profiles.find((n) => n.lights.length) ?? this.profiles[0];
-      !i && s ? await this.selectProfile(s.entry_id) : i && await this.selectProfile(this.selected);
+      const i = t && this.profiles.some((n) => n.entry_id === this.selected), r = this.profiles.find((n) => n.lights.length) ?? this.profiles[0];
+      !i && r ? await this.selectProfile(r.entry_id) : i && await this.selectProfile(this.selected);
     } catch (e) {
       this.message = `Could not load profiles: ${e.message ?? e}`;
     }
@@ -730,7 +740,7 @@ const I = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight: 
     let e = null;
     try {
       const i = await this.hass.callApi("POST", "config/config_entries/options/flow", { handler: t });
-      return e = i.flow_id, dt(i);
+      return e = i.flow_id, pt(i);
     } catch (i) {
       return this.message = `Could not read options: ${i.message ?? i}`, null;
     } finally {
@@ -739,7 +749,7 @@ const I = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight: 
     }
   }
   get overrides() {
-    return this.form ? Yt(R(this.form), this.edited) : {};
+    return this.form ? ee(U(this.form), this.edited) : {};
   }
   async refreshCurve() {
     if (!this.selected) return;
@@ -756,7 +766,7 @@ const I = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight: 
       return;
     }
     this.serverErrors = {}, this.curve = e, this.date = e.date;
-    const i = ht(e.samples);
+    const i = ct(e.samples);
     this.playback.totalMinutes = i, this.minute > i && (this.minute = i), this.schedulePoint(0);
   }
   scheduleCurve() {
@@ -769,7 +779,7 @@ const I = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight: 
   }
   async refreshPoint() {
     if (!this.curve?.samples.length) return;
-    const t = It(this.curve.samples, this.minute), e = await this.ws({
+    const t = qt(this.curve.samples, this.minute), e = await this.ws({
       type: "adaptive_lighting/sim/point",
       entry_id: this.selected,
       overrides: this.overrides,
@@ -814,8 +824,8 @@ const I = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight: 
   }
   // ---------------------------------------------------------------- editing
   onField(t, e) {
-    const [i, s] = te(t, e), n = { ...this.fieldErrors };
-    s ? n[t.name] = s : delete n[t.name], this.fieldErrors = n, s || (this.edited = { ...this.edited, [t.name]: i }, this.scheduleCurve());
+    const [i, r] = se(t, e), n = { ...this.fieldErrors };
+    r ? n[t.name] = r : delete n[t.name], this.fieldErrors = n, r || (this.edited = { ...this.edited, [t.name]: i }, this.scheduleCurve());
   }
   discard() {
     this.edited = {}, this.fieldErrors = {}, this.confirming = !1, this.scheduleCurve();
@@ -826,25 +836,25 @@ const I = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight: 
     this.busy = !0;
     let e = null, i = !1;
     try {
-      const s = await this.hass.callApi("POST", "config/config_entries/options/flow", { handler: this.selected });
-      e = s.flow_id;
-      const n = dt(s), o = R(this.form), l = R(n), a = Object.keys(l).filter((h) => !(h in t) && JSON.stringify(l[h]) !== JSON.stringify(o[h]));
+      const r = await this.hass.callApi("POST", "config/config_entries/options/flow", { handler: this.selected });
+      e = r.flow_id;
+      const n = pt(r), o = U(this.form), l = U(n), a = Object.keys(l).filter((f) => !(f in t) && JSON.stringify(l[f]) !== JSON.stringify(o[f]));
       if (a.length) {
         this.message = `This profile was changed elsewhere since you opened it (${a.join(", ")}). Reload before saving.`;
         return;
       }
-      const p = await this.hass.callApi(
+      const d = await this.hass.callApi(
         "POST",
         `config/config_entries/options/flow/${e}`,
-        Qt(n, { ...l, ...t })
+        ie(n, { ...l, ...t })
       );
-      if (p.type !== "create_entry") {
-        this.message = `Home Assistant rejected the options: ${JSON.stringify(p.errors ?? p)}`;
+      if (d.type !== "create_entry") {
+        this.message = `Home Assistant rejected the options: ${JSON.stringify(d.errors ?? d)}`;
         return;
       }
       i = !0, this.message = `Saved ${Object.keys(t).length} change(s) to ${this.profileTitle}.`, this.confirming = !1, await this.loadProfiles(!0);
-    } catch (s) {
-      this.message = `Save failed: ${s.message ?? s}`;
+    } catch (r) {
+      this.message = `Save failed: ${r.message ?? r}`;
     } finally {
       e && !i && await this.hass.callApi("DELETE", `config/config_entries/options/flow/${e}`).catch(() => {
       }), this.busy = !1;
@@ -856,8 +866,8 @@ const I = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight: 
   // ------------------------------------------------------------------ chart
   onChartPointer(t) {
     if (t.type === "pointermove" && t.buttons === 0) return;
-    const e = t.currentTarget, i = e.getBoundingClientRect(), s = (t.clientX - i.left) / i.width * I.width;
-    this.playback.seek(Ft(s, { ...I, totalMinutes: this.playback.totalMinutes })), t.type === "pointerdown" && e.setPointerCapture(t.pointerId);
+    const e = t.currentTarget, i = e.getBoundingClientRect(), r = this.box(this.playback.totalMinutes), n = (t.clientX - i.left) / i.width * r.width;
+    this.playback.seek(Jt(Wt(n, r))), t.type === "pointerdown" && e.setPointerCapture(t.pointerId);
   }
   onChartKey(t) {
     const e = t.shiftKey ? 60 : 15;
@@ -867,8 +877,12 @@ const I = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight: 
     else return;
     t.preventDefault();
   }
+  box(t) {
+    const e = this.chartWidth < 600;
+    return { ...ut, width: this.chartWidth, height: e ? 240 : ut.height, totalMinutes: t };
+  }
   renderChart() {
-    const t = this.curve?.samples ?? [], e = { ...I, totalMinutes: ht(t) }, i = e.height - e.padBottom + 22, s = q(t, this.minute), n = s >= 0 ? t[s] : null, o = _(this.minute, e), l = Wt(t), a = Object.entries(this.curve?.sun ?? {}), p = t.length ? Date.parse(t[0].t) : 0;
+    const t = this.curve?.samples ?? [], e = this.box(ct(t)), i = e.width < 600, n = (this.profiles.find((h) => h.entry_id === this.selected)?.lights ?? []).some((h) => h.features?.includes("color") || h.features?.includes("color_temp")), o = e.height - e.padBottom + 22, l = V(t, this.minute), a = l >= 0 ? t[l] : null, d = x(this.minute, e), f = Gt(t), p = Object.entries(this.curve?.sun ?? {}), m = t.length ? Date.parse(t[0].t) : 0;
     return u`
       <svg
         class="chart"
@@ -879,39 +893,40 @@ const I = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight: 
         aria-valuemin="0"
         aria-valuemax=${e.totalMinutes}
         aria-valuenow=${Math.round(this.minute)}
-        aria-valuetext=${n ? U(n.t) : ""}
+        aria-valuetext=${a ? R(a.t) : ""}
         @pointerdown=${this.onChartPointer}
         @pointermove=${this.onChartPointer}
         @keydown=${this.onChartKey}
       >
         <defs>
           <linearGradient id="ct" x1="0" x2="1">
-            ${l.map((h) => k`<stop offset=${h.offset} stop-color=${h.rgb}></stop>`)}
+            ${f.map((h) => y`<stop offset=${h.offset} stop-color=${h.rgb}></stop>`)}
           </linearGradient>
         </defs>
         ${[0, 25, 50, 75, 100].map(
-      (h) => k`
-            <line class="grid" x1=${e.padLeft} x2=${e.width - e.padRight} y1=${E(h, e)} y2=${E(h, e)}></line>
-            <text class="axis" x=${e.padLeft - 6} y=${E(h, e) + 4} text-anchor="end">${h}%</text>`
+      (h) => y`
+            <line class="grid" x1=${e.padLeft} x2=${e.width - e.padRight} y1=${S(h, e)} y2=${S(h, e)}></line>
+            <text class="axis" x=${e.padLeft - 6} y=${S(h, e) + 4} text-anchor="end">${h}%</text>`
     )}
-        ${Jt(e.totalMinutes).map(
-      (h) => k`
-            <line class="grid" x1=${_(h, e)} x2=${_(h, e)} y1=${e.padTop} y2=${e.height - e.padBottom}></line>
-            <text class="axis" x=${_(h, e)} y=${e.height - e.padBottom + 14} text-anchor="middle">${t.length ? U(t[q(t, h)].t) : ""}</text>`
+        ${Xt(e.totalMinutes, i ? 6 : 3).map(
+      (h) => y`
+            <line class="grid" x1=${x(h, e)} x2=${x(h, e)} y1=${e.padTop} y2=${e.height - e.padBottom}></line>
+            <text class="axis" x=${x(h, e)} y=${e.height - e.padBottom + 14} text-anchor="middle">${t.length ? R(t[V(t, h)].t) : ""}</text>`
     )}
-        ${a.map(([h, d]) => {
-      const f = (Date.parse(d) - p) / 6e4;
-      if (f < 0 || f > e.totalMinutes) return c;
-      const m = _(f, e);
-      return k`
-            <line class="sun" x1=${m} x2=${m} y1=${e.padTop} y2=${e.height - e.padBottom}></line>
-            <text class="sunlabel" x=${m + 3} y=${e.padTop + 10}>${ie[h] ?? h} ${U(d)}</text>`;
+        ${p.map(([h, $]) => {
+      const B = (Date.parse($) - m) / 6e4;
+      if (B < 0 || B > e.totalMinutes) return c;
+      const F = x(B, e);
+      return y`
+            <line class="sun" x1=${F} x2=${F} y1=${e.padTop} y2=${e.height - e.padBottom}></line>
+            ${i && (h === "solar_noon" || h === "solar_midnight") ? c : y`<text class="sunlabel" x=${F + 3} y=${e.padTop + 10}>${i ? "" : `${ne[h] ?? h} `}${R($)}</text>`}`;
     })}
-        <path class="line" d=${qt(t, e)}></path>
-        <rect x=${e.padLeft} y=${i} width=${e.width - e.padLeft - e.padRight} height=${pt} rx="3" fill="url(#ct)"></rect>
-        <text class="axis" x=${e.padLeft - 6} y=${i + 13} text-anchor="end">colour</text>
-        <line class="playhead" x1=${o} x2=${o} y1=${e.padTop} y2=${i + pt}></line>
-        ${n ? k`<circle class="dot" cx=${o} cy=${E(n.brightness_pct, e)} r="6"></circle>` : c}
+        <path class="line" d=${Kt(t, e)}></path>
+        <rect x=${e.padLeft} y=${o} width=${e.width - e.padLeft - e.padRight} height=${ft} rx="3" fill="url(#ct)" opacity=${n ? 1 : 0.25}></rect>
+        <text class="axis" x=${e.padLeft - 6} y=${o + 13} text-anchor="end">colour</text>
+        ${n ? c : y`<text class="axis" x=${e.padLeft + 8} y=${o + 13}>not used: these lights are dimmer-only</text>`}
+        <line class="playhead" x1=${d} x2=${d} y1=${e.padTop} y2=${o + ft}></line>
+        ${a ? y`<circle class="dot" cx=${d} cy=${S(a.brightness_pct, e)} r="6"></circle>` : c}
       </svg>
     `;
   }
@@ -919,49 +934,49 @@ const I = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight: 
   renderPoint() {
     const t = this.point;
     if (!t) return u`<p class="muted">Pick a time on the chart.</p>`;
-    const e = this.profiles.find((s) => s.entry_id === this.selected), i = t.settings;
+    const e = this.profiles.find((r) => r.entry_id === this.selected), i = t.settings;
     return u`
       <div class="now">
-        <span class="time">${U(t.t)}</span>
+        <span class="time">${R(t.t)}</span>
         <span>${i.brightness_pct.toFixed(0)}% brightness</span>
         <span>${i.color_temp_kelvin} K</span>
         ${this.sleep ? u`<span class="tag">sleep mode</span>` : c}
       </div>
       <div class="lights">
-        ${(e?.lights ?? []).map((s) => this.renderLight(s.entity_id, s.name ?? s.entity_id, t.per_light[s.entity_id]))}
+        ${(e?.lights ?? []).map((r) => this.renderLight(r.entity_id, r.name ?? r.entity_id, t.per_light[r.entity_id]))}
       </div>
       <p class="muted small">Swatches show colour and relative brightness; a screen can't show how bright a bulb really is.</p>
     `;
   }
   renderLight(t, e, i) {
     if (!i || i.error) return u`<div class="light"><div class="swatch none"></div><div><b>${e}</b><br /><span class="warn">${i?.error ?? "no data"}</span></div></div>`;
-    const s = i.brightness !== void 0 ? Math.round(i.brightness / 255 * 100) : null, n = i.display_rgb ?? [255, 244, 229], o = s === null ? 1 : 0.15 + 0.85 * (s / 100), l = `rgb(${n.map((p) => Math.round(p * o)).join(",")})`, a = i.rgb_color ? `RGB ${i.rgb_color.join(", ")}` : i.color_temp_kelvin ? `${i.color_temp_kelvin} K` : "dimmer only";
+    const r = i.brightness !== void 0 ? Math.round(i.brightness / 255 * 100) : null, n = i.display_rgb ?? [255, 244, 229], o = r === null ? 1 : 0.15 + 0.85 * (r / 100), l = `rgb(${n.map((d) => Math.round(d * o)).join(",")})`, a = i.rgb_color ? `RGB ${i.rgb_color.join(", ")}` : i.color_temp_kelvin ? `${i.color_temp_kelvin} K` : "dimmer only";
     return u`
       <div class="light" title=${t}>
         <div class="swatch" style="background:${l}"></div>
-        <div><b>${e}</b><br /><span>${s ?? "—"}% · ${a}</span></div>
+        <div><b>${e}</b><br /><span>${r ?? "—"}% · ${a}</span></div>
       </div>
     `;
   }
   // ------------------------------------------------------------ options UI
   renderField(t) {
-    const e = t.name in this.edited ? this.edited[t.name] : t.value, i = t.name in this.overrides, s = this.fieldErrors[t.name] ?? this.serverErrors[t.name], n = t.name.replaceAll("_", " ");
+    const e = t.name in this.edited ? this.edited[t.name] : t.value, i = t.name in this.overrides, r = this.fieldErrors[t.name] ?? this.serverErrors[t.name], n = t.name.replaceAll("_", " ");
     let o;
     return t.kind === "boolean" ? o = u`<input type="checkbox" .checked=${!!e} @change=${(l) => this.onField(t, l.target.checked)} />` : t.kind === "select" ? o = u`<select @change=${(l) => this.onField(t, l.target.value)}>
         ${t.options?.map((l) => u`<option value=${l} ?selected=${l === e}>${l}</option>`)}
       </select>` : t.kind === "integer" || t.kind === "float" ? o = u`<input type="number" .value=${String(e ?? "")} min=${t.min ?? c} max=${t.max ?? c} step=${t.kind === "integer" ? 1 : "any"}
-        @input=${(l) => this.onField(t, l.target.value)} />` : o = u`<input type="text" .value=${F(e) === "—" ? "" : Array.isArray(e) ? e.join(", ") : String(e)}
+        @input=${(l) => this.onField(t, l.target.value)} />` : o = u`<input type="text" .value=${W(e) === "—" ? "" : Array.isArray(e) ? e.join(", ") : String(e)}
         @change=${(l) => this.onField(t, l.target.value)} />`, u`
-      <label class="field ${i ? "changed" : ""} ${s ? "error" : ""}">
+      <label class="field ${i ? "changed" : ""} ${r ? "error" : ""}">
         <span>${n}${i ? u` <em>(edited)</em>` : c}</span>
         ${o}
-        ${s ? u`<span class="warn">⚠ ${s}</span>` : c}
+        ${r ? u`<span class="warn">⚠ ${r}</span>` : c}
       </label>
     `;
   }
   renderOptionsCard() {
     if (!this.form) return u`<p class="muted">Options unavailable.</p>`;
-    const t = this.form.fields.filter((n) => !n.section), e = this.overrides, i = Object.keys(e).length, s = R(this.form);
+    const t = this.form.fields.filter((n) => !n.section), e = this.overrides, i = Object.keys(e).length, r = U(this.form);
     return u`
       <div class="fields">${t.map((n) => this.renderField(n))}</div>
       ${this.form.sections.map(
@@ -978,7 +993,7 @@ const I = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight: 
       ${this.confirming ? u`<div class="confirm" role="dialog" aria-label="Confirm changes">
             <b>Save these changes to ${this.profileTitle}?</b>
             <table>
-              ${Object.entries(e).map(([n, o]) => u`<tr><td>${n.replaceAll("_", " ")}</td><td>${F(s[n])}</td><td>→</td><td><b>${F(o)}</b></td></tr>`)}
+              ${Object.entries(e).map(([n, o]) => u`<tr><td>${n.replaceAll("_", " ")}</td><td>${W(r[n])}</td><td>→</td><td><b>${W(o)}</b></td></tr>`)}
             </table>
             <div class="actions">
               <button @click=${() => this.confirming = !1}>Cancel</button>
@@ -1009,7 +1024,7 @@ const I = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight: 
       ${t?.error ? u`<div class="banner warnbg">⚠ ${t.error}</div>` : c}
       ${t && !t.lights.length ? u`<div class="banner">This profile has no lights, so it doesn't control anything.</div>` : c}
 
-      <section class="card">
+      <section class="card chartcard">
         ${this.renderChart()}
         <div class="controls">
           <button class="primary" @click=${() => this.playback.toggle()} aria-pressed=${this.playing}>${this.playing ? "❚❚ Pause" : "▶ Play the day"}</button>
@@ -1017,7 +1032,7 @@ const I = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight: 
             <select @change=${(e) => {
       this.duration = Number(e.target.value), this.playback.setDuration(this.duration * 1e3);
     }}>
-              ${ee.map((e) => u`<option value=${e} ?selected=${e === this.duration}>${e} s</option>`)}
+              ${re.map((e) => u`<option value=${e} ?selected=${e === this.duration}>${e} s</option>`)}
             </select>
           </label>
           <span class="spacer"></span>
@@ -1053,8 +1068,9 @@ j.properties = {
   preview: { state: !0 },
   message: { state: !0 },
   confirming: { state: !0 },
-  busy: { state: !0 }
-}, j.styles = _t`
+  busy: { state: !0 },
+  chartWidth: { state: !0 }
+}, j.styles = xt`
     :host {
       display: block;
       padding: 16px;
@@ -1125,8 +1141,8 @@ j.properties = {
       .now .time { font-size: 1.4em; }
     }
   `;
-let W = j;
-customElements.get("al-sim-panel") || customElements.define("al-sim-panel", W);
+let J = j;
+customElements.get("al-sim-panel") || customElements.define("al-sim-panel", J);
 export {
-  W as AlSimPanel
+  J as AlSimPanel
 };

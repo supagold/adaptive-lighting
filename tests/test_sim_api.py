@@ -315,6 +315,32 @@ async def test_point_sleep_rgb_sends_rgb(hass, hass_ws_client):
     data = resp["result"]["per_light"][LIGHT_1]
     assert data["rgb_color"] == [255, 56, 0]
     assert "color_temp_kelvin" not in data
+    assert data["display_rgb"] == [255, 56, 0]
+
+
+async def test_point_display_rgb_uses_clamped_kelvin(hass, hass_ws_client):
+    """The swatch colour is HA's conversion of the Kelvin the bulb would really get."""
+    from homeassistant.util.color import color_temperature_to_rgb
+
+    await setup_lights(hass)
+    entry, _ = await _profile(hass, "Wide", {CONF_MIN_COLOR_TEMP: 1000})
+    resp = await _ws(
+        hass,
+        hass_ws_client,
+        {
+            "type": "adaptive_lighting/sim/point",
+            "entry_id": entry.entry_id,
+            "at": "2026-10-15T23:00:00",
+        },
+    )
+    data = resp["result"]["per_light"][LIGHT_1]
+    assert (
+        data["color_temp_kelvin"]
+        >= hass.states.get(LIGHT_1).attributes["min_color_temp_kelvin"]
+    )
+    assert data["display_rgb"] == [
+        round(c) for c in color_temperature_to_rgb(data["color_temp_kelvin"])
+    ]
 
 
 async def test_commands_registered_once_with_many_entries(hass, hass_ws_client):

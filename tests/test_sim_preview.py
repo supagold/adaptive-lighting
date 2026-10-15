@@ -83,6 +83,7 @@ def _manual_events(hass):
 
 
 async def _start(hass, hass_ws_client, entry, **kwargs):
+    _set.entry_id = entry.entry_id
     client = await hass_ws_client(hass)
     await client.send_json(
         {
@@ -100,11 +101,12 @@ async def _start(hass, hass_ws_client, entry, **kwargs):
 
 
 async def _set(client, msg_id, at, **kwargs):
+    entry_id = kwargs.pop("entry_id", _set.entry_id)
     await client.send_json(
         {
             "id": msg_id,
             "type": "adaptive_lighting/sim/preview/set",
-            "subscription": 1,
+            "entry_id": entry_id,
             "at": at,
             **kwargs,
         },
@@ -115,6 +117,8 @@ async def _set(client, msg_id, at, **kwargs):
 
 
 async def _expected_brightness(switch):
+    # What AL would set now. Re-adaptation targets now + initial_transition, so near
+    # sunset the curve can move a step in that second: callers compare with abs=2.
     settings = switch._sun_light_settings.get_settings(False, 0)
     return round(255 * settings["brightness_pct"] / 100)
 
@@ -163,7 +167,10 @@ async def test_release_restores_flags_and_readapts(hass, hass_ws_client, how):
             _manager(hass).get_manual_control_attributes(light)
             == LightControlAttributes.NONE
         )
-        assert _brightness(hass, light) == await _expected_brightness(switch)
+        assert _brightness(hass, light) == pytest.approx(
+            await _expected_brightness(switch),
+            abs=2,
+        )
     assert hass.data.get(preview.DATA_SESSIONS) == {}
     assert events == [], "preview must not fire manual_control events"
 
@@ -180,7 +187,10 @@ async def test_timeout_restores(hass, hass_ws_client):
         _manager(hass).get_manual_control_attributes(LIGHT_1)
         == LightControlAttributes.NONE
     )
-    assert _brightness(hass, LIGHT_1) == await _expected_brightness(switch)
+    assert _brightness(hass, LIGHT_1) == pytest.approx(
+        await _expected_brightness(switch),
+        abs=2,
+    )
 
 
 async def test_entry_unload_ends_preview(hass, hass_ws_client):
@@ -309,7 +319,7 @@ async def test_set_without_session(hass, hass_ws_client):
         {
             "id": 5,
             "type": "adaptive_lighting/sim/preview/set",
-            "subscription": 99,
+            "entry_id": "nope",
             "at": NOON,
         },
     )

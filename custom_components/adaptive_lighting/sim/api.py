@@ -205,9 +205,11 @@ def _jsonable(data: dict[str, Any]) -> dict[str, Any]:
 @callback
 def _session_key(
     connection: websocket_api.ActiveConnection,
-    sub_id: int,
-) -> tuple[int, int]:
-    return (id(connection), sub_id)
+    entry_id: str,
+) -> tuple[int, str]:
+    # One preview per profile per connection. Keyed by entry_id, not the subscription
+    # id, because HA's frontend websocket library doesn't expose subscription ids.
+    return (id(connection), entry_id)
 
 
 @websocket_api.websocket_command(
@@ -255,7 +257,7 @@ def ws_preview(
         )
         return
     sessions: dict = hass.data.setdefault(preview.DATA_SESSIONS + "_ws", {})
-    key = _session_key(connection, msg["id"])
+    key = _session_key(connection, entry.entry_id)
 
     @callback
     def on_end(reason: str) -> None:
@@ -296,7 +298,7 @@ def ws_preview(
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "adaptive_lighting/sim/preview/set",
-        vol.Required("subscription"): int,
+        vol.Required("entry_id"): str,
         vol.Optional("overrides", default=dict): _OVERRIDES,
         vol.Required("at"): cv.datetime,
         vol.Optional("sleep", default=False): bool,
@@ -315,12 +317,12 @@ async def ws_preview_set(
 ) -> None:
     """Show one simulated moment on the session's lights (rate-limited to 1/s)."""
     sessions: dict = hass.data.get(preview.DATA_SESSIONS + "_ws", {})
-    found = sessions.get(_session_key(connection, msg["subscription"]))
+    found = sessions.get(_session_key(connection, msg["entry_id"]))
     if found is None or not found[1].active:
         connection.send_error(
             msg["id"],
             ERR_NOT_FOUND,
-            "No active preview for that subscription",
+            "No active preview for that profile on this connection",
         )
         return
     entry_id, session = found
@@ -338,11 +340,11 @@ async def ws_preview_set(
     for light, data in per_light.items():
         if "error" in data or light not in session.lights:
             continue
-        commands[light] = (
-            {**data, "transition": msg["transition_s"]}
-            if "transition" in data
-            else data
-        )
+        # display_rgb is for the panel's swatch only; light.turn_on would reject it.
+        command = {k: v for k, v in data.items() if k != "display_rgb"}
+        if "transition" in command:
+            command["transition"] = msg["transition_s"]
+        commands[light] = command
     sent = await session.async_send(commands)
     connection.send_result(msg["id"], {"sent": sent, "commands": commands})
 

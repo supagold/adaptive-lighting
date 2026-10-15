@@ -26,6 +26,7 @@ from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
 from homeassistant.config_entries import SOURCE_IMPORT
+from homeassistant.util.color import color_temperature_to_rgb
 
 from ..const import (
     CONF_LIGHTS,
@@ -201,10 +202,20 @@ def point(
             sleep_rgb=sleep_rgb,
         )
         service_data.pop("entity_id", None)
-        per_light[light] = {
+        entry = {
             key: list(value) if isinstance(value, tuple) else value
             for key, value in service_data.items()
         }
+        # Swatch colour for the panel, converted by HA itself (not in JS): the RGB
+        # sent, or the clamped Kelvin as RGB; None for brightness-only lights.
+        if "rgb_color" in entry:
+            entry["display_rgb"] = entry["rgb_color"]
+        elif "color_temp_kelvin" in entry:
+            r, g, b = color_temperature_to_rgb(entry["color_temp_kelvin"])
+            entry["display_rgb"] = [round(r), round(g), round(b)]
+        else:
+            entry["display_rgb"] = None
+        per_light[light] = entry
     return {
         "t": when.astimezone(zoneinfo.ZoneInfo(hass.config.time_zone)).isoformat(),
         "settings": _sample(resolved.settings, when, is_sleep),

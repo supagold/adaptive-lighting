@@ -264,7 +264,7 @@ x.elementStyles = [], x.shadowRootOptions = { mode: "open" }, x[P("elementProper
  */
 const Y = globalThis, nt = (s) => s, j = Y.trustedTypes, ot = j ? j.createPolicy("lit-html", { createHTML: (s) => s }) : void 0, At = "$lit$", v = `lit$${Math.random().toFixed(9).slice(2)}$`, kt = "?" + v, Bt = `<${kt}>`, w = document, T = () => w.createComment(""), O = (s) => s === null || typeof s != "object" && typeof s != "function", Q = Array.isArray, It = (s) => Q(s) || typeof s?.[Symbol.iterator] == "function", W = `[ 	
 \f\r]`, M = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, at = /-->/g, lt = />/g, y = RegExp(`>|${W}(?:([^\\s"'>=/]+)(${W}*=${W}*(?:[^ 	
-\f\r"'\`<>=]|("|')|))|$)`, "g"), ht = /'/g, ct = /"/g, Et = /^(?:script|style|textarea|title)$/i, St = (s) => (t, ...e) => ({ _$litType$: s, strings: t, values: e }), c = St(1), $ = St(2), k = Symbol.for("lit-noChange"), h = Symbol.for("lit-nothing"), dt = /* @__PURE__ */ new WeakMap(), b = w.createTreeWalker(w, 129);
+\f\r"'\`<>=]|("|')|))|$)`, "g"), ht = /'/g, ct = /"/g, St = /^(?:script|style|textarea|title)$/i, Et = (s) => (t, ...e) => ({ _$litType$: s, strings: t, values: e }), d = Et(1), $ = Et(2), k = Symbol.for("lit-noChange"), h = Symbol.for("lit-nothing"), dt = /* @__PURE__ */ new WeakMap(), b = w.createTreeWalker(w, 129);
 function Mt(s, t) {
   if (!Q(s) || !s.hasOwnProperty("raw")) throw Error("invalid template strings array");
   return ot !== void 0 ? ot.createHTML(t) : t;
@@ -274,10 +274,10 @@ const Ft = (s, t) => {
   let r, n = t === 2 ? "<svg>" : t === 3 ? "<math>" : "", o = M;
   for (let l = 0; l < e; l++) {
     const a = s[l];
-    let d, f, p = -1, g = 0;
-    for (; g < a.length && (o.lastIndex = g, f = o.exec(a), f !== null); ) g = o.lastIndex, o === M ? f[1] === "!--" ? o = at : f[1] !== void 0 ? o = lt : f[2] !== void 0 ? (Et.test(f[2]) && (r = RegExp("</" + f[2], "g")), o = y) : f[3] !== void 0 && (o = y) : o === y ? f[0] === ">" ? (o = r ?? M, p = -1) : f[1] === void 0 ? p = -2 : (p = o.lastIndex - f[2].length, d = f[1], o = f[3] === void 0 ? y : f[3] === '"' ? ct : ht) : o === ct || o === ht ? o = y : o === at || o === lt ? o = M : (o = y, r = void 0);
-    const m = o === y && s[l + 1].startsWith("/>") ? " " : "";
-    n += o === M ? a + Bt : p >= 0 ? (i.push(d), a.slice(0, p) + At + a.slice(p) + v + m) : a + v + (p === -2 ? l : m);
+    let p, u, c = -1, m = 0;
+    for (; m < a.length && (o.lastIndex = m, u = o.exec(a), u !== null); ) m = o.lastIndex, o === M ? u[1] === "!--" ? o = at : u[1] !== void 0 ? o = lt : u[2] !== void 0 ? (St.test(u[2]) && (r = RegExp("</" + u[2], "g")), o = y) : u[3] !== void 0 && (o = y) : o === y ? u[0] === ">" ? (o = r ?? M, c = -1) : u[1] === void 0 ? c = -2 : (c = o.lastIndex - u[2].length, p = u[1], o = u[3] === void 0 ? y : u[3] === '"' ? ct : ht) : o === ct || o === ht ? o = y : o === at || o === lt ? o = M : (o = y, r = void 0);
+    const g = o === y && s[l + 1].startsWith("/>") ? " " : "";
+    n += o === M ? a + Bt : c >= 0 ? (i.push(p), a.slice(0, c) + At + a.slice(c) + v + g) : a + v + (c === -2 ? l : g);
   }
   return [Mt(s, n + (s[e] || "<?>") + (t === 2 ? "</svg>" : t === 3 ? "</math>" : "")), i];
 };
@@ -286,29 +286,29 @@ class L {
     let r;
     this.parts = [];
     let n = 0, o = 0;
-    const l = t.length - 1, a = this.parts, [d, f] = Ft(t, e);
-    if (this.el = L.createElement(d, i), b.currentNode = this.el.content, e === 2 || e === 3) {
-      const p = this.el.content.firstChild;
-      p.replaceWith(...p.childNodes);
+    const l = t.length - 1, a = this.parts, [p, u] = Ft(t, e);
+    if (this.el = L.createElement(p, i), b.currentNode = this.el.content, e === 2 || e === 3) {
+      const c = this.el.content.firstChild;
+      c.replaceWith(...c.childNodes);
     }
     for (; (r = b.nextNode()) !== null && a.length < l; ) {
       if (r.nodeType === 1) {
-        if (r.hasAttributes()) for (const p of r.getAttributeNames()) if (p.endsWith(At)) {
-          const g = f[o++], m = r.getAttribute(p).split(v), u = /([.?@])?(.*)/.exec(g);
-          a.push({ type: 1, index: n, name: u[2], strings: m, ctor: u[1] === "." ? qt : u[1] === "?" ? Vt : u[1] === "@" ? Jt : I }), r.removeAttribute(p);
-        } else p.startsWith(v) && (a.push({ type: 6, index: n }), r.removeAttribute(p));
-        if (Et.test(r.tagName)) {
-          const p = r.textContent.split(v), g = p.length - 1;
-          if (g > 0) {
+        if (r.hasAttributes()) for (const c of r.getAttributeNames()) if (c.endsWith(At)) {
+          const m = u[o++], g = r.getAttribute(c).split(v), f = /([.?@])?(.*)/.exec(m);
+          a.push({ type: 1, index: n, name: f[2], strings: g, ctor: f[1] === "." ? qt : f[1] === "?" ? Vt : f[1] === "@" ? Jt : I }), r.removeAttribute(c);
+        } else c.startsWith(v) && (a.push({ type: 6, index: n }), r.removeAttribute(c));
+        if (St.test(r.tagName)) {
+          const c = r.textContent.split(v), m = c.length - 1;
+          if (m > 0) {
             r.textContent = j ? j.emptyScript : "";
-            for (let m = 0; m < g; m++) r.append(p[m], T()), b.nextNode(), a.push({ type: 2, index: ++n });
-            r.append(p[g], T());
+            for (let g = 0; g < m; g++) r.append(c[g], T()), b.nextNode(), a.push({ type: 2, index: ++n });
+            r.append(c[m], T());
           }
         }
       } else if (r.nodeType === 8) if (r.data === kt) a.push({ type: 2, index: n });
       else {
-        let p = -1;
-        for (; (p = r.data.indexOf(v, p + 1)) !== -1; ) a.push({ type: 7, index: n }), p += v.length - 1;
+        let c = -1;
+        for (; (c = r.data.indexOf(v, c + 1)) !== -1; ) a.push({ type: 7, index: n }), c += v.length - 1;
       }
       n++;
     }
@@ -318,11 +318,11 @@ class L {
     return i.innerHTML = t, i;
   }
 }
-function E(s, t, e = s, i) {
+function S(s, t, e = s, i) {
   if (t === k) return t;
   let r = i !== void 0 ? e._$Co?.[i] : e._$Cl;
   const n = O(t) ? void 0 : t._$litDirective$;
-  return r?.constructor !== n && (r?._$AO?.(!1), n === void 0 ? r = void 0 : (r = new n(s), r._$AT(s, e, i)), i !== void 0 ? (e._$Co ??= [])[i] = r : e._$Cl = r), r !== void 0 && (t = E(s, r._$AS(s, t.values), r, i)), t;
+  return r?.constructor !== n && (r?._$AO?.(!1), n === void 0 ? r = void 0 : (r = new n(s), r._$AT(s, e, i)), i !== void 0 ? (e._$Co ??= [])[i] = r : e._$Cl = r), r !== void 0 && (t = S(s, r._$AS(s, t.values), r, i)), t;
 }
 class Wt {
   constructor(t, e) {
@@ -340,8 +340,8 @@ class Wt {
     let n = b.nextNode(), o = 0, l = 0, a = i[0];
     for (; a !== void 0; ) {
       if (o === a.index) {
-        let d;
-        a.type === 2 ? d = new N(n, n.nextSibling, this, t) : a.type === 1 ? d = new a.ctor(n, a.name, a.strings, this, t) : a.type === 6 && (d = new Kt(n, this, t)), this._$AV.push(d), a = i[++l];
+        let p;
+        a.type === 2 ? p = new N(n, n.nextSibling, this, t) : a.type === 1 ? p = new a.ctor(n, a.name, a.strings, this, t) : a.type === 6 && (p = new Kt(n, this, t)), this._$AV.push(p), a = i[++l];
       }
       o !== a?.index && (n = b.nextNode(), o++);
     }
@@ -371,7 +371,7 @@ class N {
     return this._$AB;
   }
   _$AI(t, e = this) {
-    t = E(this, t, e), O(t) ? t === h || t == null || t === "" ? (this._$AH !== h && this._$AR(), this._$AH = h) : t !== this._$AH && t !== k && this._(t) : t._$litType$ !== void 0 ? this.$(t) : t.nodeType !== void 0 ? this.T(t) : It(t) ? this.k(t) : this._(t);
+    t = S(this, t, e), O(t) ? t === h || t == null || t === "" ? (this._$AH !== h && this._$AR(), this._$AH = h) : t !== this._$AH && t !== k && this._(t) : t._$litType$ !== void 0 ? this.$(t) : t.nodeType !== void 0 ? this.T(t) : It(t) ? this.k(t) : this._(t);
   }
   O(t) {
     return this._$AA.parentNode.insertBefore(t, this._$AB);
@@ -424,11 +424,11 @@ class I {
   _$AI(t, e = this, i, r) {
     const n = this.strings;
     let o = !1;
-    if (n === void 0) t = E(this, t, e, 0), o = !O(t) || t !== this._$AH && t !== k, o && (this._$AH = t);
+    if (n === void 0) t = S(this, t, e, 0), o = !O(t) || t !== this._$AH && t !== k, o && (this._$AH = t);
     else {
       const l = t;
-      let a, d;
-      for (t = n[0], a = 0; a < n.length - 1; a++) d = E(this, l[i + a], e, a), d === k && (d = this._$AH[a]), o ||= !O(d) || d !== this._$AH[a], d === h ? t = h : t !== h && (t += (d ?? "") + n[a + 1]), this._$AH[a] = d;
+      let a, p;
+      for (t = n[0], a = 0; a < n.length - 1; a++) p = S(this, l[i + a], e, a), p === k && (p = this._$AH[a]), o ||= !O(p) || p !== this._$AH[a], p === h ? t = h : t !== h && (t += (p ?? "") + n[a + 1]), this._$AH[a] = p;
     }
     o && !r && this.j(t);
   }
@@ -457,7 +457,7 @@ class Jt extends I {
     super(t, e, i, r, n), this.type = 5;
   }
   _$AI(t, e = this) {
-    if ((t = E(this, t, e, 0) ?? h) === k) return;
+    if ((t = S(this, t, e, 0) ?? h) === k) return;
     const i = this._$AH, r = t === h && i !== h || t.capture !== i.capture || t.once !== i.once || t.passive !== i.passive, n = t !== h && (i === h || r);
     r && this.element.removeEventListener(this.name, this, i), n && this.element.addEventListener(this.name, this, t), this._$AH = t;
   }
@@ -473,7 +473,7 @@ class Kt {
     return this._$AM._$AU;
   }
   _$AI(t) {
-    E(this, t);
+    S(this, t);
   }
 }
 const Xt = Y.litHtmlPolyfillSupport;
@@ -924,21 +924,26 @@ const bt = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight:
     try {
       const r = await this.hass.callApi("POST", "config/config_entries/options/flow", { handler: this.selected });
       e = r.flow_id;
-      const n = mt(r), o = H(this.form), l = H(n), a = Object.keys(l).filter((f) => !(f in t) && JSON.stringify(l[f]) !== JSON.stringify(o[f]));
+      const n = mt(r), o = H(this.form), l = H(n), a = Object.keys(l).filter((u) => !(u in t) && JSON.stringify(l[u]) !== JSON.stringify(o[u]));
       if (a.length) {
         this.message = `This profile was changed elsewhere since you opened it (${a.join(", ")}). Reload before saving.`;
         return;
       }
-      const d = await this.hass.callApi(
+      const p = await this.hass.callApi(
         "POST",
         `config/config_entries/options/flow/${e}`,
         ce(n, { ...l, ...t })
       );
-      if (d.type !== "create_entry") {
-        this.message = `Home Assistant rejected the options: ${JSON.stringify(d.errors ?? d)}`;
+      if (p.type !== "create_entry") {
+        this.message = `Home Assistant rejected the options: ${JSON.stringify(p.errors ?? p)}`;
         return;
       }
       i = !0, this.message = `Saved ${Object.keys(t).length} change(s) to ${this.profileTitle}.`, this.confirming = !1, await this.loadProfiles(!0);
+      for (let u = 0; u < 10 && this.profiles.find((c) => c.entry_id === this.selected)?.loaded === !1; u++) {
+        await new Promise((m) => setTimeout(m, 1e3));
+        const c = await this.ws({ type: "adaptive_lighting/sim/profiles" });
+        this.profiles = c.profiles;
+      }
     } catch (r) {
       this.message = `Save failed: ${r.message ?? r}`;
     } finally {
@@ -968,8 +973,8 @@ const bt = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight:
     return { ...bt, width: this.chartWidth, height: e ? 240 : bt.height, totalMinutes: t };
   }
   renderChart() {
-    const t = this.curve?.samples ?? [], e = this.box(pt(t)), i = e.width < 600, n = (this.profiles.find((u) => u.entry_id === this.selected)?.lights ?? []).some((u) => u.features?.includes("color") || u.features?.includes("color_temp")), o = e.height - e.padBottom + 22, l = K(t, this.minute), a = l >= 0 ? t[l] : null, d = _(this.minute, e), f = se(t), p = Object.entries(this.curve?.sun ?? {}), g = t.length ? Date.parse(t[0].t) : 0, m = t.length ? ut(t, Math.round(this.minute)) : "";
-    return c`
+    const t = this.curve?.samples ?? [], e = this.box(pt(t)), i = e.width < 600, n = (this.profiles.find((f) => f.entry_id === this.selected)?.lights ?? []).some((f) => f.features?.includes("color") || f.features?.includes("color_temp")), o = e.height - e.padBottom + 22, l = K(t, this.minute), a = l >= 0 ? t[l] : null, p = _(this.minute, e), u = se(t), c = Object.entries(this.curve?.sun ?? {}), m = t.length ? Date.parse(t[0].t) : 0, g = t.length ? ut(t, Math.round(this.minute)) : "";
+    return d`
       <svg
         class="chart"
         viewBox="0 0 ${e.width} ${e.height}"
@@ -979,64 +984,64 @@ const bt = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight:
         aria-valuemin="0"
         aria-valuemax=${e.totalMinutes}
         aria-valuenow=${Math.round(this.minute)}
-        aria-valuetext=${m ? U(m) : ""}
+        aria-valuetext=${g ? U(g) : ""}
         @pointerdown=${this.onChartPointer}
         @pointermove=${this.onChartPointer}
         @keydown=${this.onChartKey}
       >
         <defs>
           <linearGradient id="ct" x1="0" x2="1">
-            ${f.map((u) => $`<stop offset=${u.offset} stop-color=${u.rgb}></stop>`)}
+            ${u.map((f) => $`<stop offset=${f.offset} stop-color=${f.rgb}></stop>`)}
           </linearGradient>
         </defs>
         ${[0, 25, 50, 75, 100].map(
-      (u) => $`
-            <line class="grid" x1=${e.padLeft} x2=${e.width - e.padRight} y1=${A(u, e)} y2=${A(u, e)}></line>
-            <text class="axis" x=${e.padLeft - 6} y=${A(u, e) + 4} text-anchor="end">${u}%</text>`
+      (f) => $`
+            <line class="grid" x1=${e.padLeft} x2=${e.width - e.padRight} y1=${A(f, e)} y2=${A(f, e)}></line>
+            <text class="axis" x=${e.padLeft - 6} y=${A(f, e) + 4} text-anchor="end">${f}%</text>`
     )}
         ${re(e.totalMinutes, i ? 6 : 3).map(
-      (u) => $`
-            <line class="grid" x1=${_(u, e)} x2=${_(u, e)} y1=${e.padTop} y2=${e.height - e.padBottom}></line>
-            <text class="axis" x=${_(u, e)} y=${e.height - e.padBottom + 14} text-anchor="middle">${t.length ? Qt(t[K(t, u)].t, i) : ""}</text>`
+      (f) => $`
+            <line class="grid" x1=${_(f, e)} x2=${_(f, e)} y1=${e.padTop} y2=${e.height - e.padBottom}></line>
+            <text class="axis" x=${_(f, e)} y=${e.height - e.padBottom + 14} text-anchor="middle">${t.length ? Qt(t[K(t, f)].t, i) : ""}</text>`
     )}
-        ${p.map(([u, R]) => {
-      const S = (Date.parse(R) - g) / 6e4;
-      if (S < 0 || S > e.totalMinutes) return h;
-      const F = _(S, e);
+        ${c.map(([f, R]) => {
+      const E = (Date.parse(R) - m) / 6e4;
+      if (E < 0 || E > e.totalMinutes) return h;
+      const F = _(E, e);
       return $`
             <line class="sun" x1=${F} x2=${F} y1=${e.padTop} y2=${e.height - e.padBottom}></line>
-            ${i && (u === "solar_noon" || u === "solar_midnight") ? h : $`<text class="sunlabel" x=${F + 3} y=${e.padTop + 10}>${i ? "" : `${ve[u] ?? u} `}${U(R)}</text>`}`;
+            ${i && (f === "solar_noon" || f === "solar_midnight") ? h : $`<text class="sunlabel" x=${F + 3} y=${e.padTop + 10}>${i ? "" : `${ve[f] ?? f} `}${U(R)}</text>`}`;
     })}
         <path class="line" d=${ie(t, e)}></path>
         <rect x=${e.padLeft} y=${o} width=${e.width - e.padLeft - e.padRight} height=${wt} rx="3" fill="url(#ct)" opacity=${n ? 1 : 0.25}></rect>
         <text class="axis" x=${e.padLeft - 6} y=${o + 13} text-anchor="end">colour</text>
         ${n ? h : $`<text class="axis" x=${e.padLeft + 8} y=${o + 13}>not used: these lights are dimmer-only</text>`}
-        <line class="playhead" x1=${d} x2=${d} y1=${e.padTop} y2=${o + wt}></line>
-        ${a ? $`<circle class="dot" cx=${d} cy=${A(a.brightness_pct, e)} r="6"></circle>` : h}
-        ${a ? this.renderTip(U(m), d, A(a.brightness_pct, e), e) : h}
+        <line class="playhead" x1=${p} x2=${p} y1=${e.padTop} y2=${o + wt}></line>
+        ${a ? $`<circle class="dot" cx=${p} cy=${A(a.brightness_pct, e)} r="6"></circle>` : h}
+        ${a ? this.renderTip(U(g), p, A(a.brightness_pct, e), e) : h}
       </svg>
     `;
   }
   /** Time label beside the playhead dot: above it, or below when the dot is near the top. */
   renderTip(t, e, i, r) {
-    const n = t.length * 7.2 + 14, o = 22, l = r.padLeft, a = r.width - r.padRight - n, d = Math.min(Math.max(e - n / 2, l), a), f = i - 12 - o, p = f >= r.padTop + 14 ? f : i + 12;
+    const n = t.length * 7.2 + 14, o = 22, l = r.padLeft, a = r.width - r.padRight - n, p = Math.min(Math.max(e - n / 2, l), a), u = i - 12 - o, c = u >= r.padTop + 14 ? u : i + 12;
     return $`
       <g class="tip" pointer-events="none">
-        <rect x=${d} y=${p} width=${n} height=${o} rx="5"></rect>
-        <text x=${d + n / 2} y=${p + 15} text-anchor="middle">${t}</text>
+        <rect x=${p} y=${c} width=${n} height=${o} rx="5"></rect>
+        <text x=${p + n / 2} y=${c + 15} text-anchor="middle">${t}</text>
       </g>`;
   }
   // ------------------------------------------------------------- point view
   renderPoint() {
     const t = this.point;
-    if (!t) return c`<p class="muted">Pick a time on the chart.</p>`;
+    if (!t) return d`<p class="muted">Pick a time on the chart.</p>`;
     const e = this.profiles.find((r) => r.entry_id === this.selected), i = t.settings;
-    return c`
+    return d`
       <div class="now">
         <span class="time">${U(t.t)}</span>
         <span>${i.brightness_pct.toFixed(0)}% brightness</span>
         <span>${i.color_temp_kelvin} K</span>
-        ${this.sleep ? c`<span class="tag">sleep mode</span>` : h}
+        ${this.sleep ? d`<span class="tag">sleep mode</span>` : h}
       </div>
       <div class="lights">
         ${Pt(this.savedLights, this.effectiveLights, this.mix).map(
@@ -1055,27 +1060,27 @@ const bt = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight:
     return i ?? (typeof r == "string" ? r : t);
   }
   renderLight(t, e, i) {
-    const r = t.id, n = { active: "", solo: "solo", muted: "muted", "not-soloed": "not soloed" }[t.status], o = c`
-      ${n ? c`<span class="tag">${n}</span>` : h}
-      ${t.saved ? h : c`<span class="tag">unsaved</span>`}`, l = this.preview === "off" ? h : t.saved ? t.active ? c`<br /><span class="muted small">preview is driving this light; a manual change lasts until the playhead moves</span>` : h : c`<br /><span class="muted small">save to preview on the real light</span>`;
-    let a, d;
+    const r = t.id, n = { active: "", solo: "solo", muted: "muted", "not-soloed": "not soloed" }[t.status], o = d`
+      ${n ? d`<span class="tag">${n}</span>` : h}
+      ${t.saved ? h : d`<span class="tag">unsaved</span>`}`, l = this.preview === "off" ? h : t.saved ? t.active ? d`<br /><span class="muted small">preview is driving this light; a manual change lasts until the playhead moves</span>` : h : d`<br /><span class="muted small">save to preview on the real light</span>`;
+    let a, p;
     if (!i || i.error)
-      a = c`<span class="swatch none"></span>`, d = c`<span class="warn">${i?.error ?? "no data"}</span>`;
+      a = d`<span class="swatch none"></span>`, p = d`<span class="warn">${i?.error ?? "no data"}</span>`;
     else {
-      const p = i.brightness !== void 0 ? Math.round(i.brightness / 255 * 100) : null, g = i.display_rgb ?? [255, 244, 229], m = p === null ? 1 : 0.15 + 0.85 * (p / 100), u = `rgb(${g.map((S) => Math.round(S * m)).join(",")})`, R = i.rgb_color ? `RGB ${i.rgb_color.join(", ")}` : i.color_temp_kelvin ? `${i.color_temp_kelvin} K` : "dimmer only";
-      a = c`<span class="swatch" style="background:${u}"></span>`, d = c`<span>${p ?? "—"}% · ${R}</span>`;
+      const c = i.brightness !== void 0 ? Math.round(i.brightness / 255 * 100) : null, m = i.display_rgb ?? [255, 244, 229], g = c === null ? 1 : 0.15 + 0.85 * (c / 100), f = `rgb(${m.map((E) => Math.round(E * g)).join(",")})`, R = i.rgb_color ? `RGB ${i.rgb_color.join(", ")}` : i.color_temp_kelvin ? `${i.color_temp_kelvin} K` : "dimmer only";
+      a = d`<span class="swatch" style="background:${f}"></span>`, p = d`<span>${c ?? "—"}% · ${R}</span>`;
     }
-    const f = () => ge(this, r);
-    return c`
+    const u = () => ge(this, r);
+    return d`
       <div class="light ${t.active ? "" : "inactive"}" title=${r}>
-        <button class="swatchbtn" aria-label="Control ${e}" @click=${f}>${a}</button>
+        <button class="swatchbtn" aria-label="Control ${e}" @click=${u}>${a}</button>
         <div class="lightinfo">
-          <button class="link name" @click=${f}>${e}</button>${o}<br />${d}${l}
+          <button class="link name" @click=${u}>${e}</button>${o}<br />${p}${l}
         </div>
         <div class="ms">
-          <button class="mute" aria-pressed=${this.mix.muted.has(r)} title="Mute in preview"
+          <button class="mute" aria-pressed=${this.mix.muted.has(r)} title="Mute in preview" aria-label="Mute ${e}"
             @click=${() => this.setMix({ ...this.mix, muted: $t(this.mix.muted, r) })}>M</button>
-          <button class="solo" aria-pressed=${this.mix.solo.has(r)} title="Solo in preview"
+          <button class="solo" aria-pressed=${this.mix.solo.has(r)} title="Solo in preview" aria-label="Solo ${e}"
             @click=${() => this.setMix({ ...this.mix, solo: $t(this.mix.solo, r) })}>S</button>
         </div>
       </div>
@@ -1085,33 +1090,33 @@ const bt = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight:
   renderField(t) {
     const e = t.name in this.edited ? this.edited[t.name] : t.value, i = t.name in this.overrides, r = this.fieldErrors[t.name] ?? this.serverErrors[t.name], n = t.name.replaceAll("_", " ");
     let o;
-    return t.name === "lights" && t.kind === "entity" && this.picker === "ready" ? c`
+    return t.name === "lights" && t.kind === "entity" && this.picker === "ready" ? d`
         <div class="field wide ${i ? "changed" : ""} ${r ? "error" : ""}">
-          <span>${n}${i ? c` <em>(edited)</em>` : h}</span>
+          <span>${n}${i ? d` <em>(edited)</em>` : h}</span>
           <ha-selector .hass=${this.hass} .selector=${{ entity: { domain: "light", multiple: !0 } }}
             .value=${V(e)} @value-changed=${(l) => this.onLights(V(l.detail.value))}></ha-selector>
-          ${r ? c`<span class="warn">⚠ ${r}</span>` : h}
+          ${r ? d`<span class="warn">⚠ ${r}</span>` : h}
         </div>
-      ` : (t.kind === "boolean" ? o = c`<input type="checkbox" .checked=${!!e} @change=${(l) => this.onField(t, l.target.checked)} />` : t.kind === "select" ? o = c`<select @change=${(l) => this.onField(t, l.target.value)}>
-        ${t.options?.map((l) => c`<option value=${l} ?selected=${l === e}>${l}</option>`)}
-      </select>` : t.kind === "integer" || t.kind === "float" ? o = c`<input type="number" .value=${String(e ?? "")} min=${t.min ?? h} max=${t.max ?? h} step=${t.kind === "integer" ? 1 : "any"}
-        @input=${(l) => this.onField(t, l.target.value)} />` : o = c`<input type="text" .value=${q(e) === "—" ? "" : Array.isArray(e) ? e.join(", ") : String(e)}
-        @change=${(l) => this.onField(t, l.target.value)} />`, c`
+      ` : (t.kind === "boolean" ? o = d`<input type="checkbox" .checked=${!!e} @change=${(l) => this.onField(t, l.target.checked)} />` : t.kind === "select" ? o = d`<select @change=${(l) => this.onField(t, l.target.value)}>
+        ${t.options?.map((l) => d`<option value=${l} ?selected=${l === e}>${l}</option>`)}
+      </select>` : t.kind === "integer" || t.kind === "float" ? o = d`<input type="number" .value=${String(e ?? "")} min=${t.min ?? h} max=${t.max ?? h} step=${t.kind === "integer" ? 1 : "any"}
+        @input=${(l) => this.onField(t, l.target.value)} />` : o = d`<input type="text" .value=${q(e) === "—" ? "" : Array.isArray(e) ? e.join(", ") : String(e)}
+        @change=${(l) => this.onField(t, l.target.value)} />`, d`
       <label class="field ${t.name === "lights" ? "wide" : ""} ${i ? "changed" : ""} ${r ? "error" : ""}">
-        <span>${n}${i ? c` <em>(edited)</em>` : h}</span>
+        <span>${n}${i ? d` <em>(edited)</em>` : h}</span>
         ${o}
-        ${t.name === "lights" && this.picker === "failed" ? c`<span class="muted small">Home Assistant's light picker didn't load; type entity ids separated by commas.</span>` : h}
-        ${r ? c`<span class="warn">⚠ ${r}</span>` : h}
+        ${t.name === "lights" && this.picker === "failed" ? d`<span class="muted small">Home Assistant's light picker didn't load; type entity ids separated by commas.</span>` : h}
+        ${r ? d`<span class="warn">⚠ ${r}</span>` : h}
       </label>
     `);
   }
   renderOptionsCard() {
-    if (!this.form) return c`<p class="muted">Options unavailable.</p>`;
+    if (!this.form) return d`<p class="muted">Options unavailable.</p>`;
     const t = this.form.fields.filter((n) => !n.section), e = this.overrides, i = Object.keys(e).length, r = H(this.form);
-    return c`
+    return d`
       <div class="fields">${t.map((n) => this.renderField(n))}</div>
       ${this.form.sections.map(
-      (n) => c`<details>
+      (n) => d`<details>
           <summary>${n} options</summary>
           <div class="fields">${this.form.fields.filter((o) => o.section === n).map((o) => this.renderField(o))}</div>
         </details>`
@@ -1121,10 +1126,10 @@ const bt = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight:
         <button ?disabled=${!i || this.busy} @click=${this.discard}>Discard</button>
         <button class="primary" ?disabled=${!i || this.busy || Object.keys(this.fieldErrors).length > 0} @click=${() => this.confirming = !0}>Save…</button>
       </div>
-      ${this.confirming ? c`<div class="confirm" role="dialog" aria-label="Confirm changes">
+      ${this.confirming ? d`<div class="confirm" role="dialog" aria-label="Confirm changes">
             <b>Save these changes to ${this.profileTitle}?</b>
             <table>
-              ${Object.entries(e).map(([n, o]) => c`<tr><td>${n.replaceAll("_", " ")}</td><td>${q(r[n])}</td><td>→</td><td><b>${q(o)}</b></td></tr>`)}
+              ${Object.entries(e).map(([n, o]) => d`<tr><td>${n.replaceAll("_", " ")}</td><td>${q(r[n])}</td><td>→</td><td><b>${q(o)}</b></td></tr>`)}
             </table>
             <div class="actions">
               <button @click=${() => this.confirming = !1}>Cancel</button>
@@ -1136,12 +1141,12 @@ const bt = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight:
   // ----------------------------------------------------------------- render
   render() {
     const t = this.profiles.find((e) => e.entry_id === this.selected);
-    return c`
+    return d`
       <div class="toolbar">
         <h1>Adaptive Lighting</h1>
         <label>Profile
           <select @change=${(e) => void this.selectProfile(e.target.value)}>
-            ${this.profiles.map((e) => c`<option value=${e.entry_id} ?selected=${e.entry_id === this.selected}>${e.title}${e.lights.length ? "" : " (no lights)"}</option>`)}
+            ${this.profiles.map((e) => d`<option value=${e.entry_id} ?selected=${e.entry_id === this.selected}>${e.title}${e.lights.length ? "" : " (no lights)"}</option>`)}
           </select>
         </label>
         <label>Day <input type="date" .value=${this.date} @change=${(e) => {
@@ -1151,9 +1156,9 @@ const bt = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight:
       this.sleep = e.target.checked, this.refreshCurve();
     }} /> Sleep mode</label>
       </div>
-      ${this.message ? c`<div class="banner" role="status">${this.message} <button class="link" @click=${() => this.message = ""}>dismiss</button></div>` : h}
-      ${t?.error ? c`<div class="banner warnbg">⚠ ${t.error}</div>` : h}
-      ${t && !t.lights.length ? c`<div class="banner">This profile has no lights, so it doesn't control anything.</div>` : h}
+      ${this.message ? d`<div class="banner" role="status">${this.message} <button class="link" @click=${() => this.message = ""}>dismiss</button></div>` : h}
+      ${t?.error ? d`<div class="banner warnbg">⚠ ${t.error}</div>` : h}
+      ${t && !t.lights.length ? d`<div class="banner">This profile has no lights, so it doesn't control anything.</div>` : h}
 
       <section class="card chartcard">
         ${this.renderChart()}
@@ -1163,7 +1168,7 @@ const bt = { totalMinutes: 1440, width: 1e3, height: 300, padLeft: 44, padRight:
             <select @change=${(e) => {
       this.duration = Number(e.target.value), this.playback.setDuration(this.duration * 1e3);
     }}>
-              ${$e.map((e) => c`<option value=${e} ?selected=${e === this.duration}>${e} s</option>`)}
+              ${$e.map((e) => d`<option value=${e} ?selected=${e === this.duration}>${e} s</option>`)}
             </select>
           </label>
           <span class="spacer"></span>
@@ -1247,7 +1252,7 @@ D.properties = {
     .preview.active .tag { background: var(--primary-color); color: var(--text-primary-color, #fff); border-color: var(--primary-color); font-weight: 600; }
     .now { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; margin-bottom: 12px; }
     .now .time { font-size: 1.8em; font-weight: 300; }
-    .lights { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+    .lights { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 10px; }
     .light { display: flex; gap: 10px; align-items: center; }
     .swatch { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--divider-color); flex: none; }
     .swatch.none { background: repeating-linear-gradient(45deg, var(--divider-color) 0 4px, transparent 4px 8px); }

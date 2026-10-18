@@ -52,9 +52,9 @@ New files: `FORK.md`, `CHANGELOG-FORK.md`, `custom_components/adaptive_lighting/
 | `adaptive_lighting/sim/profiles` | – | `{time_zone, profiles: [{entry_id, title, loaded, options (effective), stored_options, error, lights: [{entity_id, name, state, features, supported_color_modes, min/max_color_temp_kelvin}], switches}]}` |
 | `adaptive_lighting/sim/curve` | `entry_id`, `overrides` {}, `date` (YYYY-MM-DD, default today), `step_min` 1–60 (5), `sleep` (false) | `{date, sun: {sunrise, sunset, solar_noon, solar_midnight}, samples: [{t, minute, brightness_pct, color_temp_kelvin, rgb_color, sun_position, force_rgb_color}]}` or `{errors: {field: message}}` |
 | `adaptive_lighting/sim/point` | `entry_id`, `overrides`, `at` (ISO datetime; local tz if naive), `sleep`, `adapt_brightness`, `adapt_color` | `{t, settings: {…as a sample}, per_light: {entity_id: {brightness, color_temp_kelvin or rgb_color, transition}}}` or `{errors}` |
-
-| `adaptive_lighting/sim/preview` (subscription) | `entry_id`, `lights` (default: all of the profile's), `timeout_s` 10–3600 (600) | result, then events `{status: "active", lights, timeout_s}` and `{status: "ended", reason}` (`timeout` / `unload` / `ha_stop`). Errors: `not_found`, `not_loaded`, `busy` (a light is in another preview). |
+| `adaptive_lighting/sim/preview` (subscription) | `entry_id`, `lights` (omitted: all of the profile's; `[]`: none), `timeout_s` 10–3600 (600) | result, then events `{status: "active", lights, timeout_s}` and `{status: "ended", reason}` (`timeout` / `unload` / `ha_stop`). Errors: `not_found`, `not_loaded`, `busy` (a light is in another preview). |
 | `adaptive_lighting/sim/preview/set` | `entry_id` (one preview per profile per connection), `overrides`, `at`, `sleep`, `transition_s` 0–60 (1) | `{sent: bool, commands: {entity_id: turn_on data}}`; `sent: false` = queued (max 1 command/s per session, newest wins) |
+| `adaptive_lighting/sim/preview/lights` | `entry_id`, `lights` (saved-profile lights only) | `{lights}`. Changes a running preview's set (the panel's mute/solo): leaving lights are handed back at once, joining lights are taken over. Errors: `not_found` (no session, or not in the profile), `busy` (nothing changed). |
 
 **Preview takeover/restore** (`sim/preview.py`): snapshot each light, then set its manual-control
 flags to ALL directly in the manager. This starts no auto-reset timer and fires no event, and the
@@ -65,7 +65,7 @@ are force re-adapted. Lights that were manual get their snapshot back, and so do
 unload / HA stop.
 
 `overrides` are unsaved option values, validated field by field with the options-flow validators.
-Unknown `entry_id` → error `not_found`. Only `preview` / `preview/set` touch lights; nothing changes config entries.
+Unknown `entry_id` → error `not_found`. Only `preview`, `preview/set` and `preview/lights` touch lights; nothing changes config entries.
 
 ## Running the tests locally
 
@@ -96,7 +96,14 @@ npm test            # Vitest: time axis (incl. DST days), playback, throttle, op
 npm run build       # type-check + bundle into the integration; commit the result
 ```
 
-All numbers come from the websocket API. The panel never computes the curve. Options are read
+All numbers come from the websocket API. The panel never computes the curve.
+
+The Lights option uses HA's own `ha-selector` (entity, light, multiple). Custom panels don't
+get it for free: `src/lib/ha-elements.ts` loads it through `loadCardHelpers()` and the button
+card's editor, which uses `ha-form`, and that imports `ha-selector` (checked against HA frontend
+20260527.7). If that fails within 5 s, the text box is used instead. Clicking a light fires
+`hass-more-info`. Mute/solo (`src/lib/lights.ts`) is panel state only. Setting
+`instantSaveLights` makes picker changes save at once without the Save button. Options are read
 from and saved through HA's options flow (REST), the same path as the Settings UI.
 
 ## Syncing an upstream release

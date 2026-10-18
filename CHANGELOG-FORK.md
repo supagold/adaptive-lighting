@@ -1,5 +1,20 @@
 # Fork changelog
 
+## 1.32.0-homeops.3
+
+- Panel: the Lights option uses Home Assistant's own light picker (search, add, remove), with
+  the text box as a fallback if the picker can't be loaded. Unsaved additions show in the chart
+  and light cards at once, tagged "unsaved"; Save writes them like any other option.
+- Panel: clicking a light's name or swatch opens HA's more-info dialog for it.
+- Panel: per-light **M**ute / **S**olo for the preview only (never saved). Solo wins over mute.
+  Pressed state = fill + a text tag, never colour alone.
+- `adaptive_lighting/sim/preview/lights`: change a running preview's lights. A light leaving the
+  set is handed back at once, exactly as at session end. Full suite: 534 passed.
+- `adaptive_lighting/sim/preview` with an explicit empty `lights` list now takes over nothing
+  (it used to take over every light).
+- Panel: after Save, wait for the profile to finish reloading, so the preview toggle isn't left
+  disabled.
+
 ## 1.32.0-homeops.2
 
 - Panel: 12-hour clock everywhere (hour axis, sun markers, the time readout).

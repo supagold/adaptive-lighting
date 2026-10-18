@@ -399,6 +399,12 @@ export class AlSimPanel extends LitElement {
       this.message = `Saved ${Object.keys(pending).length} change(s) to ${this.profileTitle}.`;
       this.confirming = false;
       await this.loadProfiles(true);
+      // Saving reloads the profile; until that finishes it reports not loaded (no preview).
+      for (let i = 0; i < 10 && this.profiles.find((p) => p.entry_id === this.selected)?.loaded === false; i++) {
+        await new Promise((r) => setTimeout(r, 1000));
+        const res = await this.ws<{ profiles: Profile[] }>({ type: "adaptive_lighting/sim/profiles" });
+        this.profiles = res.profiles;
+      }
     } catch (err) {
       this.message = `Save failed: ${(err as Error).message ?? err}`;
     } finally {
@@ -583,9 +589,9 @@ export class AlSimPanel extends LitElement {
           <button class="link name" @click=${more}>${name}</button>${tags}<br />${detail}${note}
         </div>
         <div class="ms">
-          <button class="mute" aria-pressed=${this.mix.muted.has(id)} title="Mute in preview"
+          <button class="mute" aria-pressed=${this.mix.muted.has(id)} title="Mute in preview" aria-label="Mute ${name}"
             @click=${() => this.setMix({ ...this.mix, muted: toggle(this.mix.muted, id) })}>M</button>
-          <button class="solo" aria-pressed=${this.mix.solo.has(id)} title="Solo in preview"
+          <button class="solo" aria-pressed=${this.mix.solo.has(id)} title="Solo in preview" aria-label="Solo ${name}"
             @click=${() => this.setMix({ ...this.mix, solo: toggle(this.mix.solo, id) })}>S</button>
         </div>
       </div>
@@ -754,7 +760,7 @@ export class AlSimPanel extends LitElement {
     .preview.active .tag { background: var(--primary-color); color: var(--text-primary-color, #fff); border-color: var(--primary-color); font-weight: 600; }
     .now { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; margin-bottom: 12px; }
     .now .time { font-size: 1.8em; font-weight: 300; }
-    .lights { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+    .lights { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 10px; }
     .light { display: flex; gap: 10px; align-items: center; }
     .swatch { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--divider-color); flex: none; }
     .swatch.none { background: repeating-linear-gradient(45deg, var(--divider-color) 0 4px, transparent 4px 8px); }

@@ -341,3 +341,114 @@ async def test_preview_non_admin_rejected(
         _manager(hass).get_manual_control_attributes(LIGHT_1)
         == LightControlAttributes.NONE
     )
+
+
+async def _lights(client, msg_id, lights, entry_id=None):
+    await client.send_json(
+        {
+            "id": msg_id,
+            "type": "adaptive_lighting/sim/preview/lights",
+            "entry_id": entry_id or _set.entry_id,
+            "lights": lights,
+        },
+    )
+    return await client.receive_json()
+
+
+async def test_mute_restores_that_light_and_unmute_takes_it_back(
+    hass,
+    hass_ws_client,
+):
+    entry, switch = await _setup(hass)
+    events = _manual_events(hass)
+    client = await _start(hass, hass_ws_client, entry)
+    at = NIGHT if await _expected_brightness(switch) > 128 else NOON
+    previewed = (await _set(client, 2, at))["commands"][LIGHT_1][ATTR_BRIGHTNESS]
+    await hass.async_block_till_done()
+
+    resp = await _lights(client, 3, [LIGHT_1])
+    assert resp["success"], resp
+    assert resp["result"] == {"lights": [LIGHT_1]}
+    await hass.async_block_till_done()
+    manager = _manager(hass)
+    # Muted: handed back and re-adapted. Still soloed: untouched.
+    assert manager.get_manual_control_attributes(LIGHT_2) == LightControlAttributes.NONE
+    assert _brightness(hass, LIGHT_2) == pytest.approx(
+        await _expected_brightness(switch),
+        abs=2,
+    )
+    assert manager.get_manual_control_attributes(LIGHT_1) == LightControlAttributes.ALL
+    assert _brightness(hass, LIGHT_1) == previewed
+    assert set(hass.data[preview.DATA_SESSIONS]) == {LIGHT_1}
+
+    # Commands now skip the muted light.
+    res = await _set(client, 4, at)
+    assert set(res["commands"]) == {LIGHT_1}
+
+    # Unmute: taken over again and driven by the next command.
+    resp = await _lights(client, 5, [LIGHT_1, LIGHT_2])
+    assert resp["success"], resp
+    assert manager.get_manual_control_attributes(LIGHT_2) == LightControlAttributes.ALL
+    res = await _set(client, 6, at)
+    # Rate limit: the command may be queued; fire the flush.
+    async_fire_time_changed(hass, dt_util.utcnow() + dt.timedelta(seconds=4))
+    await hass.async_block_till_done()
+    assert _brightness(hass, LIGHT_2) == res["commands"][LIGHT_2][ATTR_BRIGHTNESS]
+
+    await client.close()
+    await hass.async_block_till_done()
+    for light in (LIGHT_1, LIGHT_2):
+        assert (
+            manager.get_manual_control_attributes(light) == LightControlAttributes.NONE
+        )
+    assert hass.data.get(preview.DATA_SESSIONS) == {}
+    assert events == [], "preview must not fire manual_control events"
+
+
+async def test_queued_command_skips_light_muted_since(hass, hass_ws_client):
+    entry, switch = await _setup(hass)
+    client = await _start(hass, hass_ws_client, entry)
+    await _set(client, 2, NOON)
+    queued = await _set(client, 3, NIGHT)
+    assert queued["sent"] is False
+    assert (await _lights(client, 4, [LIGHT_1]))["success"]
+    await hass.async_block_till_done()
+    restored = _brightness(hass, LIGHT_2)
+    async_fire_time_changed(hass, dt_util.utcnow() + dt.timedelta(seconds=2))
+    await hass.async_block_till_done()
+    assert _brightness(hass, LIGHT_1) == queued["commands"][LIGHT_1][ATTR_BRIGHTNESS]
+    assert _brightness(hass, LIGHT_2) == restored
+
+
+async def test_lights_outside_profile_rejected(hass, hass_ws_client):
+    entry, _ = await _setup(hass)
+    client = await _start(hass, hass_ws_client, entry)
+    resp = await _lights(client, 2, [LIGHT_1, "light.light_3"])
+    assert resp["error"]["code"] == "not_found"
+    assert set(hass.data[preview.DATA_SESSIONS]) == {LIGHT_1, LIGHT_2}
+
+
+async def test_unmute_light_busy_in_other_preview(hass, hass_ws_client):
+    entry, _ = await _setup(hass)
+    client = await _start(hass, hass_ws_client, entry, lights=[LIGHT_1])
+    other = await hass_ws_client(hass)
+    await other.send_json(
+        {
+            "id": 1,
+            "type": "adaptive_lighting/sim/preview",
+            "entry_id": entry.entry_id,
+            "lights": [LIGHT_2],
+        },
+    )
+    assert (await other.receive_json())["success"]
+    resp = await _lights(client, 2, [LIGHT_1, LIGHT_2])
+    assert resp["error"]["code"] == "busy"
+    sessions = hass.data[preview.DATA_SESSIONS]
+    assert sessions[LIGHT_1] is not sessions[LIGHT_2]
+
+
+async def test_lights_without_session(hass, hass_ws_client):
+    entry, _ = await _setup(hass)
+    client = await hass_ws_client(hass)
+    resp = await _lights(client, 1, [LIGHT_1], entry_id=entry.entry_id)
+    assert resp["error"]["code"] == "not_found"

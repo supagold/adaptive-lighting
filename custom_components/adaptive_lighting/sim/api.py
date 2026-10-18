@@ -349,8 +349,56 @@ async def ws_preview_set(
     connection.send_result(msg["id"], {"sent": sent, "commands": commands})
 
 
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "adaptive_lighting/sim/preview/lights",
+        vol.Required("entry_id"): str,
+        vol.Required("lights"): [str],
+    },
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_preview_lights(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict,
+) -> None:
+    """Change which of the profile's lights a running preview drives (mute/solo)."""
+    sessions: dict = hass.data.get(preview.DATA_SESSIONS + "_ws", {})
+    found = sessions.get(_session_key(connection, msg["entry_id"]))
+    if found is None or not found[1].active:
+        connection.send_error(
+            msg["id"],
+            ERR_NOT_FOUND,
+            "No active preview for that profile on this connection",
+        )
+        return
+    session = found[1]
+    unknown = [light for light in msg["lights"] if light not in session.switch.lights]
+    if unknown:
+        connection.send_error(
+            msg["id"],
+            ERR_NOT_FOUND,
+            f"Not in this profile: {unknown}",
+        )
+        return
+    try:
+        await session.async_set_lights(msg["lights"])
+    except preview.PreviewBusyError as err:
+        connection.send_error(msg["id"], ERR_BUSY, str(err))
+        return
+    connection.send_result(msg["id"], {"lights": session.lights})
+
+
 @callback
 def async_register(hass: HomeAssistant) -> None:
     """Register the simulator's websocket commands."""
-    for handler in (ws_profiles, ws_curve, ws_point, ws_preview, ws_preview_set):
+    for handler in (
+        ws_profiles,
+        ws_curve,
+        ws_point,
+        ws_preview,
+        ws_preview_set,
+        ws_preview_lights,
+    ):
         websocket_api.async_register_command(hass, handler)

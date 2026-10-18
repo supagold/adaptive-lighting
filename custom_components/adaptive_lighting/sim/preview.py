@@ -11,6 +11,8 @@ Takeover:  snapshot each light (on/off + colour state) and its manual-control fl
 Commands:  light.turn_on with an Adaptive Lighting context ("preview"), so the integration's
            own manual-change detection ignores them. At most one command per second per
            session; newer requests replace queued ones.
+Mute/solo: `async_set_lights` changes the set mid-session; a light leaving it is
+           restored at once, like at the end of a session.
 Restore:   (toggle off, browser gone, timeout, entry unload, HA stop) put back each light's
            exact previous flags; lights that were off go back off; lights that were being
            adapted are re-adapted immediately (force); lights that were manual get their
@@ -116,18 +118,8 @@ class PreviewSession:
         if busy:
             msg = f"already in a preview: {', '.join(busy)}"
             raise PreviewBusyError(msg)
-        manager = self.switch.manager
         for light in self.lights:
-            state = self.hass.states.get(light)
-            self._snapshot[light] = (
-                {"state": state.state, "attributes": dict(state.attributes)}
-                if state is not None
-                else {"state": None, "attributes": {}}
-            )
-            self._prior_flags[light] = manager.get_manual_control_attributes(light)
-            manager.cancel_ongoing_adaptation_calls(light)
-            manager.manual_control[light] = LightControlAttributes.ALL
-            sessions[light] = self
+            self._take(light, sessions)
         self.active = True
         self._cancel_timeout = async_call_later(
             self.hass,
@@ -139,6 +131,43 @@ class PreviewSession:
             self.lights,
             self.timeout_s,
         )
+
+    def _take(self, light: str, sessions: dict[str, PreviewSession]) -> None:
+        """Snapshot one light and pause its adaptation."""
+        manager = self.switch.manager
+        state = self.hass.states.get(light)
+        self._snapshot[light] = (
+            {"state": state.state, "attributes": dict(state.attributes)}
+            if state is not None
+            else {"state": None, "attributes": {}}
+        )
+        self._prior_flags[light] = manager.get_manual_control_attributes(light)
+        manager.cancel_ongoing_adaptation_calls(light)
+        manager.manual_control[light] = LightControlAttributes.ALL
+        sessions[light] = self
+
+    async def async_set_lights(self, lights: list[str]) -> None:
+        """Change which lights the session drives (mute/solo in the panel).
+
+        Lights leaving the set are handed back now, exactly as at the end of a
+        session; lights joining it are taken over. Raises PreviewBusyError, changing
+        nothing, if a joining light is in another session.
+        """
+        if not self.active:
+            return
+        sessions = self.hass.data.setdefault(DATA_SESSIONS, {})
+        joining = [light for light in lights if light not in self.lights]
+        busy = [light for light in joining if light in sessions]
+        if busy:
+            msg = f"already in a preview: {', '.join(busy)}"
+            raise PreviewBusyError(msg)
+        leaving = [light for light in self.lights if light not in lights]
+        for light in joining:
+            self._take(light, sessions)
+        self.lights = [light for light in self.lights if light not in leaving] + joining
+        if leaving:
+            await self._release(leaving, "muted")
+        _LOGGER.debug("Preview lights now %s (released %s)", self.lights, leaving)
 
     async def _on_timeout(self, _now: Any) -> None:
         self._cancel_timeout = None
@@ -170,7 +199,8 @@ class PreviewSession:
     async def _send_now(self, per_light: dict[str, dict[str, Any]]) -> None:
         self._last_sent = time.monotonic()
         for light, data in per_light.items():
-            await self._call(SERVICE_TURN_ON, {ATTR_ENTITY_ID: light, **data})
+            if light in self.lights:  # a queued command may name a light muted since
+                await self._call(SERVICE_TURN_ON, {ATTR_ENTITY_ID: light, **data})
         self.commands_sent += 1
 
     async def _call(self, service: str, data: dict[str, Any]) -> None:
@@ -197,10 +227,17 @@ class PreviewSession:
                 cancel()
         self._cancel_timeout = self._cancel_flush = None
         self._pending = None
+        await self._release(self.lights, reason)
+        _LOGGER.debug("Preview on %s ended (%s)", self.lights, reason)
+        if self.on_end is not None:
+            self.on_end(reason)
+
+    async def _release(self, lights: list[str], reason: str) -> None:
+        """Hand `lights` back: prior flags, then off / re-adapt / snapshot."""
         manager = self.switch.manager
         sessions = self.hass.data.get(DATA_SESSIONS, {})
         to_adapt = []
-        for light in self.lights:
+        for light in lights:
             if sessions.get(light) is self:
                 del sessions[light]
             prior = self._prior_flags[light]
@@ -227,9 +264,6 @@ class PreviewSession:
                 transition=self.switch.initial_transition,
                 force=True,
             )
-        _LOGGER.debug("Preview on %s ended (%s)", self.lights, reason)
-        if self.on_end is not None:
-            self.on_end(reason)
 
 
 def _restore_data(light: str, attributes: dict[str, Any]) -> dict[str, Any]:

@@ -7,6 +7,7 @@ import { clockText, isoForMinute, minuteForX, nearestIndex, totalMinutes, xForMi
 import { LatestThrottle, Playback, type Clock } from "../src/lib/playback";
 import { buildPayload, changes, coerce, parseForm, savedValues } from "../src/lib/options";
 import { brightnessPath, colorStops, hourTicks, yForPct } from "../src/lib/chart";
+import { asLightList, lightRows, lightStatus, previewLights, pruneMix, sameLights, toggle } from "../src/lib/lights";
 import type { Curve } from "../src/lib/types";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -252,5 +253,56 @@ describe("12-hour clock", () => {
     expect(hourLabel12("2026-10-15T15:00:00-04:00")).toBe("3 PM");
     expect(hourLabel12("2026-10-15T12:00:00-04:00", true)).toBe("12p");
     expect(hourLabel12("2026-10-15T06:00:00-04:00", true)).toBe("6a");
+  });
+});
+
+describe("lights: mute/solo and the edited list", () => {
+  const A = "light.a", B = "light.b", C = "light.c";
+  const mix = (muted: string[] = [], solo: string[] = []) => ({ muted: new Set(muted), solo: new Set(solo) });
+
+  it("reads arrays and the text-box fallback", () => {
+    expect(asLightList([A, B])).toEqual([A, B]);
+    expect(asLightList(` ${A}, ${B},,${A} `)).toEqual([A, B]);
+    expect(asLightList(undefined)).toEqual([]);
+  });
+
+  it("all play with nothing muted or soloed", () => {
+    expect(lightRows([A, B], [A, B], mix()).map((r) => r.status)).toEqual(["active", "active"]);
+  });
+
+  it("mute removes a light", () => {
+    expect(previewLights([A, B], [A, B], mix([B]))).toEqual([A]);
+    expect(lightStatus(B, mix([B]))).toBe("muted");
+  });
+
+  it("solo wins over mute", () => {
+    const m = mix([A], [A, C]);
+    expect(lightStatus(A, m)).toBe("solo");
+    expect(lightStatus(B, m)).toBe("not-soloed");
+    expect(previewLights([A, B, C], [A, B, C], m)).toEqual([A, C]);
+  });
+
+  it("unsaved additions show but are not previewed on real lights", () => {
+    const rows = lightRows([A], [A, C], mix());
+    expect(rows.find((r) => r.id === C)).toMatchObject({ saved: false, active: true });
+    expect(previewLights([A], [A, C], mix())).toEqual([A]);
+  });
+
+  it("lights removed in the editor are neither shown nor previewed", () => {
+    expect(lightRows([A, B], [A], mix()).map((r) => r.id)).toEqual([A]);
+    expect(previewLights([A, B], [A], mix())).toEqual([A]);
+  });
+
+  it("toggle and prune", () => {
+    expect([...toggle(new Set([A]), A)]).toEqual([]);
+    expect([...toggle(new Set([A]), B)]).toEqual([A, B]);
+    const p = pruneMix(mix([A, B], [C]), [A]);
+    expect([...p.muted]).toEqual([A]);
+    expect(p.solo.size).toBe(0);
+  });
+
+  it("compares light sets ignoring order", () => {
+    expect(sameLights([A, B], [B, A])).toBe(true);
+    expect(sameLights([A], [A, B])).toBe(false);
   });
 });

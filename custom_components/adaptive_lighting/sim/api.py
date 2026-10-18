@@ -247,7 +247,7 @@ def ws_preview(
     if switch is None:
         connection.send_error(msg["id"], ERR_NOT_LOADED, "Profile is not loaded")
         return
-    lights = msg.get("lights") or list(switch.lights)
+    lights = msg["lights"] if "lights" in msg else list(switch.lights)
     unknown = [light for light in lights if light not in switch.lights]
     if unknown:
         connection.send_error(

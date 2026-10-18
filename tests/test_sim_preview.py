@@ -452,3 +452,9 @@ async def test_lights_without_session(hass, hass_ws_client):
     client = await hass_ws_client(hass)
     resp = await _lights(client, 1, [LIGHT_1], entry_id=entry.entry_id)
     assert resp["error"]["code"] == "not_found"
+
+
+async def test_empty_light_list_takes_over_nothing(hass, hass_ws_client):
+    entry, _ = await _setup(hass)
+    await _start(hass, hass_ws_client, entry, lights=[])
+    assert hass.data.get(preview.DATA_SESSIONS, {}) == {}

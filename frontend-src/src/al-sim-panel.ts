@@ -13,6 +13,8 @@ import { clock12, hourLabel12, isoForMinute, minuteForX, nearestIndex, snap, tot
 import { brightnessPath, colorStops, hourTicks, yForPct, type ChartBox } from "./lib/chart";
 import { LatestThrottle, Playback } from "./lib/playback";
 import { buildPayload, changes, coerce, parseForm, savedValues, show, type Field, type Form } from "./lib/options";
+import { asLightList, emptyMix, lightRows, previewLights, pruneMix, sameLights, toggle, type LightRow, type Mix } from "./lib/lights";
+import { ensureHaSelector, openMoreInfo } from "./lib/ha-elements";
 
 interface Hass {
   connection: {
@@ -20,6 +22,7 @@ interface Hass {
     subscribeMessage<T>(cb: (msg: T) => void, msg: Record<string, unknown>): Promise<() => Promise<void>>;
   };
   callApi<T>(method: string, path: string, body?: unknown): Promise<T>;
+  states: Record<string, { state: string; attributes: Record<string, unknown> }>;
 }
 
 type PreviewState = "off" | "starting" | "active";
@@ -51,6 +54,8 @@ export class AlSimPanel extends LitElement {
     confirming: { state: true },
     busy: { state: true },
     chartWidth: { state: true },
+    mix: { state: true },
+    picker: { state: true },
   };
 
   declare hass: Hass;
@@ -73,6 +78,8 @@ export class AlSimPanel extends LitElement {
   declare confirming: boolean;
   declare busy: boolean;
   declare chartWidth: number;
+  declare mix: Mix; // preview-only mute/solo; never saved
+  declare picker: "loading" | "ready" | "failed"; // HA's light picker for the lights option
 
   private playback: Playback;
   private curveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -80,6 +87,10 @@ export class AlSimPanel extends LitElement {
   private unsubPreview: (() => Promise<void>) | null = null;
   private previewSender: LatestThrottle<string>;
   private loaded = false;
+  private previewSet: string[] = []; // lights the running preview drives
+  // Charlie may want lights to save the moment they're added/removed (2026-10-18).
+  // Turning this on is the whole change: the picker then calls saveFields directly.
+  private instantSaveLights = false;
   private resize = new ResizeObserver((entries) => {
     // Draw the chart at its real pixel width so text stays ~12px on phones.
     const w = Math.round(entries[0].contentRect.width);
@@ -106,6 +117,8 @@ export class AlSimPanel extends LitElement {
     this.confirming = false;
     this.busy = false;
     this.chartWidth = 1000;
+    this.mix = emptyMix();
+    this.picker = "loading";
     this.playback = new Playback(1440, 30_000, (m, playing) => {
       this.minute = m;
       this.playing = playing;
@@ -120,6 +133,7 @@ export class AlSimPanel extends LitElement {
     if (changed.has("hass") && this.hass && !this.loaded) {
       this.loaded = true;
       void this.loadProfiles();
+      void ensureHaSelector().then((ok) => (this.picker = ok ? "ready" : "failed"));
     }
   }
 
@@ -157,6 +171,7 @@ export class AlSimPanel extends LitElement {
     await this.stopPreview();
     this.playback.pause();
     this.selected = entryId;
+    this.mix = emptyMix();
     this.edited = {};
     this.fieldErrors = {};
     this.serverErrors = {};
@@ -182,6 +197,19 @@ export class AlSimPanel extends LitElement {
 
   private get overrides(): Record<string, unknown> {
     return this.form ? changes(savedValues(this.form), this.edited) : {};
+  }
+
+  private get savedLights(): string[] {
+    return (this.profiles.find((p) => p.entry_id === this.selected)?.lights ?? []).map((l) => l.entity_id);
+  }
+
+  /** The lights as edited (unsaved additions included, removals left out). */
+  private get effectiveLights(): string[] {
+    return "lights" in this.edited ? asLightList(this.edited.lights) : this.savedLights;
+  }
+
+  private get previewTargets(): string[] {
+    return previewLights(this.savedLights, this.effectiveLights, this.mix);
   }
 
   private async refreshCurve(): Promise<void> {
@@ -241,12 +269,20 @@ export class AlSimPanel extends LitElement {
   }
 
   private async startPreview(): Promise<void> {
+    const lights = this.previewTargets;
+    if (!lights.length) {
+      this.message = "Every saved light is muted or not soloed, so there's nothing to preview.";
+      this.requestUpdate();
+      return;
+    }
+    this.previewSet = lights;
     this.preview = "starting";
     try {
       this.unsubPreview = await this.hass.connection.subscribeMessage<{ status: string; reason?: string }>(
         (ev) => {
           if (ev.status === "active") {
             this.preview = "active";
+            void this.syncPreviewLights(); // mute/solo may have changed while starting
             this.schedulePoint(0);
           } else if (ev.status === "ended") {
             this.preview = "off";
@@ -255,7 +291,7 @@ export class AlSimPanel extends LitElement {
             this.message = ev.reason === "timeout" ? "Preview timed out; lights are back to normal." : `Preview ended (${ev.reason}).`;
           }
         },
-        { type: "adaptive_lighting/sim/preview", entry_id: this.selected, timeout_s: 600 },
+        { type: "adaptive_lighting/sim/preview", entry_id: this.selected, lights, timeout_s: 600 },
       );
     } catch (err) {
       this.preview = "off";
@@ -269,6 +305,24 @@ export class AlSimPanel extends LitElement {
     this.unsubPreview = null;
     this.preview = "off";
     if (unsub) await unsub().catch(() => undefined);
+  }
+
+  /** Hand muted lights back / take unmuted ones over in the running preview. */
+  private async syncPreviewLights(): Promise<void> {
+    const lights = this.previewTargets;
+    if (this.preview !== "active" || sameLights(lights, this.previewSet)) return;
+    this.previewSet = lights;
+    try {
+      await this.ws({ type: "adaptive_lighting/sim/preview/lights", entry_id: this.selected, lights });
+      this.schedulePoint(0); // newly unmuted lights get the current moment
+    } catch (err) {
+      this.message = `Couldn't change the previewed lights: ${(err as Error).message ?? err}`;
+    }
+  }
+
+  private setMix(mix: Mix): void {
+    this.mix = mix;
+    void this.syncPreviewLights();
   }
 
   private async sendPreview(at: string): Promise<void> {
@@ -296,16 +350,28 @@ export class AlSimPanel extends LitElement {
     }
   }
 
+  private onLights(lights: string[]): void {
+    this.edited = { ...this.edited, lights };
+    this.setMix(pruneMix(this.mix, lights));
+    this.scheduleCurve();
+    if (this.instantSaveLights) void this.saveFields({ lights });
+  }
+
   private discard(): void {
     this.edited = {};
     this.fieldErrors = {};
     this.confirming = false;
+    this.setMix(pruneMix(this.mix, this.savedLights));
     this.scheduleCurve();
   }
 
   private async apply(): Promise<void> {
+    await this.saveFields(this.overrides);
+  }
+
+  /** Write `pending` (field -> value) to the profile through HA's options flow. */
+  private async saveFields(pending: Record<string, unknown>): Promise<void> {
     if (!this.form) return;
-    const pending = this.overrides;
     this.busy = true;
     let flowId: string | null = null;
     let done = false;
@@ -464,23 +530,64 @@ export class AlSimPanel extends LitElement {
         ${this.sleep ? html`<span class="tag">sleep mode</span>` : nothing}
       </div>
       <div class="lights">
-        ${(profile?.lights ?? []).map((l) => this.renderLight(l.entity_id, l.name ?? l.entity_id, p.per_light[l.entity_id]))}
+        ${lightRows(this.savedLights, this.effectiveLights, this.mix).map((row) =>
+          this.renderLight(row, this.lightName(row.id, profile), p.per_light[row.id]),
+        )}
       </div>
-      <p class="muted small">Swatches show colour and relative brightness; a screen can't show how bright a bulb really is.</p>
+      <p class="muted small">
+        Swatches show colour and relative brightness; a screen can't show how bright a bulb really is.
+        <b>M</b> mutes and <b>S</b> solos a light in this preview only; nothing is saved.
+        Click a light's name to control it. Adaptive Lighting may then treat it as manually controlled.
+      </p>
     `;
   }
 
-  private renderLight(id: string, name: string, d: PerLight | undefined) {
-    if (!d || d.error) return html`<div class="light"><div class="swatch none"></div><div><b>${name}</b><br /><span class="warn">${d?.error ?? "no data"}</span></div></div>`;
-    const pct = d.brightness !== undefined ? Math.round((d.brightness / 255) * 100) : null;
-    const rgb = d.display_rgb ?? [255, 244, 229]; // brightness-only: neutral warm white
-    const level = pct === null ? 1 : 0.15 + 0.85 * (pct / 100);
-    const color = `rgb(${rgb.map((c) => Math.round(c * level)).join(",")})`;
-    const kind = d.rgb_color ? `RGB ${d.rgb_color.join(", ")}` : d.color_temp_kelvin ? `${d.color_temp_kelvin} K` : "dimmer only";
+  private lightName(id: string, profile: Profile | undefined): string {
+    const known = profile?.lights.find((l) => l.entity_id === id)?.name;
+    const live = this.hass?.states?.[id]?.attributes.friendly_name;
+    return known ?? (typeof live === "string" ? live : id);
+  }
+
+  private renderLight(row: LightRow, name: string, d: PerLight | undefined) {
+    const id = row.id;
+    const statusText = { active: "", solo: "solo", muted: "muted", "not-soloed": "not soloed" }[row.status];
+    const tags = html`
+      ${statusText ? html`<span class="tag">${statusText}</span>` : nothing}
+      ${row.saved ? nothing : html`<span class="tag">unsaved</span>`}`;
+    const note =
+      this.preview === "off"
+        ? nothing
+        : !row.saved
+          ? html`<br /><span class="muted small">save to preview on the real light</span>`
+          : row.active
+            ? html`<br /><span class="muted small">preview is driving this light; a manual change lasts until the playhead moves</span>`
+            : nothing;
+    let swatch, detail;
+    if (!d || d.error) {
+      swatch = html`<span class="swatch none"></span>`;
+      detail = html`<span class="warn">${d?.error ?? "no data"}</span>`;
+    } else {
+      const pct = d.brightness !== undefined ? Math.round((d.brightness / 255) * 100) : null;
+      const rgb = d.display_rgb ?? [255, 244, 229]; // brightness-only: neutral warm white
+      const level = pct === null ? 1 : 0.15 + 0.85 * (pct / 100);
+      const color = `rgb(${rgb.map((c) => Math.round(c * level)).join(",")})`;
+      const kind = d.rgb_color ? `RGB ${d.rgb_color.join(", ")}` : d.color_temp_kelvin ? `${d.color_temp_kelvin} K` : "dimmer only";
+      swatch = html`<span class="swatch" style="background:${color}"></span>`;
+      detail = html`<span>${pct ?? "—"}% · ${kind}</span>`;
+    }
+    const more = () => openMoreInfo(this, id);
     return html`
-      <div class="light" title=${id}>
-        <div class="swatch" style="background:${color}"></div>
-        <div><b>${name}</b><br /><span>${pct ?? "—"}% · ${kind}</span></div>
+      <div class="light ${row.active ? "" : "inactive"}" title=${id}>
+        <button class="swatchbtn" aria-label="Control ${name}" @click=${more}>${swatch}</button>
+        <div class="lightinfo">
+          <button class="link name" @click=${more}>${name}</button>${tags}<br />${detail}${note}
+        </div>
+        <div class="ms">
+          <button class="mute" aria-pressed=${this.mix.muted.has(id)} title="Mute in preview"
+            @click=${() => this.setMix({ ...this.mix, muted: toggle(this.mix.muted, id) })}>M</button>
+          <button class="solo" aria-pressed=${this.mix.solo.has(id)} title="Solo in preview"
+            @click=${() => this.setMix({ ...this.mix, solo: toggle(this.mix.solo, id) })}>S</button>
+        </div>
       </div>
     `;
   }
@@ -492,6 +599,17 @@ export class AlSimPanel extends LitElement {
     const err = this.fieldErrors[f.name] ?? this.serverErrors[f.name];
     const label = f.name.replaceAll("_", " ");
     let input;
+    if (f.name === "lights" && f.kind === "entity" && this.picker === "ready") {
+      // Not inside a <label>: a label would steal clicks from the picker's own inputs.
+      return html`
+        <div class="field wide ${changed ? "changed" : ""} ${err ? "error" : ""}">
+          <span>${label}${changed ? html` <em>(edited)</em>` : nothing}</span>
+          <ha-selector .hass=${this.hass} .selector=${{ entity: { domain: "light", multiple: true } }}
+            .value=${asLightList(value)} @value-changed=${(e: CustomEvent) => this.onLights(asLightList(e.detail.value))}></ha-selector>
+          ${err ? html`<span class="warn">⚠ ${err}</span>` : nothing}
+        </div>
+      `;
+    }
     if (f.kind === "boolean") {
       input = html`<input type="checkbox" .checked=${Boolean(value)} @change=${(e: Event) => this.onField(f, (e.target as HTMLInputElement).checked)} />`;
     } else if (f.kind === "select") {
@@ -506,9 +624,12 @@ export class AlSimPanel extends LitElement {
         @change=${(e: Event) => this.onField(f, (e.target as HTMLInputElement).value)} />`;
     }
     return html`
-      <label class="field ${changed ? "changed" : ""} ${err ? "error" : ""}">
+      <label class="field ${f.name === "lights" ? "wide" : ""} ${changed ? "changed" : ""} ${err ? "error" : ""}">
         <span>${label}${changed ? html` <em>(edited)</em>` : nothing}</span>
         ${input}
+        ${f.name === "lights" && this.picker === "failed"
+          ? html`<span class="muted small">Home Assistant's light picker didn't load; type entity ids separated by commas.</span>`
+          : nothing}
         ${err ? html`<span class="warn">⚠ ${err}</span>` : nothing}
       </label>
     `;
@@ -637,6 +758,20 @@ export class AlSimPanel extends LitElement {
     .light { display: flex; gap: 10px; align-items: center; }
     .swatch { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--divider-color); flex: none; }
     .swatch.none { background: repeating-linear-gradient(45deg, var(--divider-color) 0 4px, transparent 4px 8px); }
+    .swatch { display: block; }
+    .swatchbtn { padding: 0; border: none; background: none; border-radius: 50%; }
+    .lightinfo { flex: 1; min-width: 0; }
+    .lightinfo .tag { margin-left: 6px; }
+    button.name { padding: 0; font-weight: 700; text-decoration: none; color: var(--primary-text-color); text-align: left; }
+    button.name:hover { text-decoration: underline; }
+    /* Mute/solo: pressed = filled + the card's text label; never colour alone. */
+    .ms { display: flex; gap: 4px; flex: none; }
+    .ms button { width: 30px; height: 30px; padding: 0; border-radius: 6px; font-weight: 700; }
+    .ms button.mute[aria-pressed="true"] { background: var(--warning-color, #ffa600); border-color: var(--warning-color, #ffa600); color: #000; }
+    .ms button.solo[aria-pressed="true"] { background: var(--primary-color); border-color: var(--primary-color); color: var(--text-primary-color, #fff); }
+    .light.inactive .swatch { opacity: 0.3; border-style: dashed; }
+    .light.inactive .lightinfo > span { opacity: 0.6; }
+    .field.wide { grid-column: 1 / -1; }
     .muted { color: var(--secondary-text-color); }
     .small { font-size: 0.8em; margin-bottom: 0; }
     .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px 16px; margin-bottom: 12px; }

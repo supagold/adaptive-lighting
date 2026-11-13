@@ -15,6 +15,7 @@ import { LatestThrottle, Playback } from "./lib/playback";
 import { buildPayload, changes, coerce, parseForm, savedValues, show, type Field, type Form } from "./lib/options";
 import { asLightList, emptyMix, lightRows, previewLights, pruneMix, sameLights, toggle, type LightRow, type Mix } from "./lib/lights";
 import { ensureHaSelector, openMoreInfo } from "./lib/ha-elements";
+import { createProfile, sharedLights } from "./lib/create";
 
 interface Hass {
   connection: {
@@ -56,6 +57,7 @@ export class AlSimPanel extends LitElement {
     chartWidth: { state: true },
     mix: { state: true },
     picker: { state: true },
+    draft: { state: true },
   };
 
   declare hass: Hass;
@@ -80,6 +82,7 @@ export class AlSimPanel extends LitElement {
   declare chartWidth: number;
   declare mix: Mix; // preview-only mute/solo; never saved
   declare picker: "loading" | "ready" | "failed"; // HA's light picker for the lights option
+  declare draft: { name: string } | null; // a new profile being designed; nothing exists until Create
 
   private playback: Playback;
   private curveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -119,6 +122,7 @@ export class AlSimPanel extends LitElement {
     this.chartWidth = 1000;
     this.mix = emptyMix();
     this.picker = "loading";
+    this.draft = null;
     this.playback = new Playback(1440, 30_000, (m, playing) => {
       this.minute = m;
       this.playing = playing;
@@ -171,6 +175,7 @@ export class AlSimPanel extends LitElement {
     await this.stopPreview();
     this.playback.pause();
     this.selected = entryId;
+    this.draft = null;
     this.mix = emptyMix();
     this.edited = {};
     this.fieldErrors = {};
@@ -357,8 +362,52 @@ export class AlSimPanel extends LitElement {
     if (this.instantSaveLights) void this.saveFields({ lights });
   }
 
+  /** Start a new profile: it borrows the selected profile's curve as a starting point, lights cleared. */
+  private async startDraft(): Promise<void> {
+    await this.stopPreview();
+    this.playback.pause();
+    this.draft = { name: "" };
+    this.edited = { lights: [] };
+    this.fieldErrors = {};
+    this.confirming = false;
+    this.mix = emptyMix();
+    this.scheduleCurve();
+  }
+
+  private async cancelDraft(): Promise<void> {
+    await this.selectProfile(this.selected);
+  }
+
+  private async create(): Promise<void> {
+    if (!this.form || !this.draft) return;
+    this.busy = true;
+    try {
+      const values = { ...savedValues(this.form), ...this.edited };
+      const res = await createProfile((m, path, body) => this.hass.callApi(m, path, body), this.draft.name.trim(), values);
+      if (!res.ok) {
+        this.message = res.error;
+        return;
+      }
+      const name = this.draft.name.trim();
+      this.confirming = false;
+      this.draft = null;
+      this.selected = res.entryId;
+      await this.loadProfiles(true);
+      for (let i = 0; i < 10 && this.profiles.find((p) => p.entry_id === res.entryId)?.loaded === false; i++) {
+        await new Promise((r) => setTimeout(r, 1000));
+        const out = await this.ws<{ profiles: Profile[] }>({ type: "adaptive_lighting/sim/profiles" });
+        this.profiles = out.profiles;
+      }
+      this.message = `Created profile ${name}.`;
+    } catch (err) {
+      this.message = `Create failed: ${(err as Error).message ?? err}`;
+    } finally {
+      this.busy = false;
+    }
+  }
+
   private discard(): void {
-    this.edited = {};
+    this.edited = this.draft ? { lights: [] } : {};
     this.fieldErrors = {};
     this.confirming = false;
     this.setMix(pruneMix(this.mix, this.savedLights));
@@ -366,6 +415,7 @@ export class AlSimPanel extends LitElement {
   }
 
   private async apply(): Promise<void> {
+    if (this.draft) return this.create();
     await this.saveFields(this.overrides);
   }
 
@@ -647,6 +697,48 @@ export class AlSimPanel extends LitElement {
     const pending = this.overrides;
     const n = Object.keys(pending).length;
     const saved = savedValues(this.form);
+    const draft = this.draft;
+    const sharing = draft ? sharedLights(this.profiles, this.effectiveLights, null) : {};
+    const nameOk = Boolean(draft?.name.trim());
+    const canCreate = nameOk && this.effectiveLights.length > 0 && Object.keys(this.fieldErrors).length === 0 && !this.busy;
+    if (draft)
+      return html`
+        <label class="field wide ${nameOk ? "" : "error"}">
+          <span>name</span>
+          <input type="text" placeholder="e.g. Hallway" .value=${draft.name} @input=${(e: Event) => (this.draft = { name: (e.target as HTMLInputElement).value })} />
+          ${nameOk ? nothing : html`<span class="warn">⚠ required</span>`}
+        </label>
+        <div class="fields">${basic.map((f) => this.renderField(f))}</div>
+        ${this.form.sections.map(
+          (sec) => html`<details>
+            <summary>${sec} options</summary>
+            <div class="fields">${this.form!.fields.filter((f) => f.section === sec).map((f) => this.renderField(f))}</div>
+          </details>`,
+        )}
+        ${Object.keys(sharing).length
+          ? html`<p class="warn">⚠ Already controlled by another profile: ${Object.entries(sharing).map(([id, t]) => `${id} (${t.join(", ")})`).join("; ")}. Two profiles on one light will fight.</p>`
+          : nothing}
+        ${this.effectiveLights.length ? nothing : html`<p class="warn">⚠ Pick at least one light.</p>`}
+        <div class="actions">
+          <button ?disabled=${this.busy} @click=${this.cancelDraft}>Cancel</button>
+          <button ?disabled=${this.busy} @click=${this.discard}>Reset</button>
+          <button class="primary" ?disabled=${!canCreate} @click=${() => (this.confirming = true)}>Create…</button>
+        </div>
+        ${this.confirming
+          ? html`<div class="confirm" role="dialog" aria-label="Confirm new profile">
+              <b>Create profile "${draft.name.trim()}"?</b>
+              <table>
+                <tr><td>lights</td><td><b>${show(this.effectiveLights)}</b></td></tr>
+                ${Object.entries(pending).filter(([k]) => k !== "lights").map(([k, v]) => html`<tr><td>${k.replaceAll("_", " ")}</td><td>${show(saved[k])}</td><td>→</td><td><b>${show(v)}</b></td></tr>`)}
+              </table>
+              <p class="muted small">All other options start as in ${this.profileTitle}.</p>
+              <div class="actions">
+                <button @click=${() => (this.confirming = false)}>Cancel</button>
+                <button class="primary" ?disabled=${this.busy} @click=${this.apply}>${this.busy ? "Creating…" : "Create profile"}</button>
+              </div>
+            </div>`
+          : nothing}
+      `;
     return html`
       <div class="fields">${basic.map((f) => this.renderField(f))}</div>
       ${this.form.sections.map(
@@ -682,16 +774,20 @@ export class AlSimPanel extends LitElement {
       <div class="toolbar">
         <h1>Adaptive Lighting</h1>
         <label>Profile
-          <select @change=${(e: Event) => void this.selectProfile((e.target as HTMLSelectElement).value)}>
+          <select ?disabled=${Boolean(this.draft)} @change=${(e: Event) => void this.selectProfile((e.target as HTMLSelectElement).value)}>
             ${this.profiles.map((p) => html`<option value=${p.entry_id} ?selected=${p.entry_id === this.selected}>${p.title}${p.lights.length ? "" : " (no lights)"}</option>`)}
           </select>
         </label>
+        <button ?disabled=${Boolean(this.draft) || this.busy || !this.form} @click=${this.startDraft}>+ New profile</button>
         <label>Day <input type="date" .value=${this.date} @change=${(e: Event) => { this.date = (e.target as HTMLInputElement).value; void this.refreshCurve(); }} /></label>
         <label class="inline"><input type="checkbox" .checked=${this.sleep} @change=${(e: Event) => { this.sleep = (e.target as HTMLInputElement).checked; void this.refreshCurve(); }} /> Sleep mode</label>
       </div>
       ${this.message ? html`<div class="banner" role="status">${this.message} <button class="link" @click=${() => (this.message = "")}>dismiss</button></div>` : nothing}
+      ${this.draft
+        ? html`<div class="banner" role="status"><b>New profile (draft).</b> The curve starts as a copy of ${this.profileTitle}'s. Add lights, adjust the curve, name it, then Create. Nothing exists until you create it.</div>`
+        : nothing}
       ${profile?.error ? html`<div class="banner warnbg">⚠ ${profile.error}</div>` : nothing}
-      ${profile && !profile.lights.length ? html`<div class="banner">This profile has no lights, so it doesn't control anything.</div>` : nothing}
+      ${profile && !this.draft && !profile.lights.length ? html`<div class="banner">This profile has no lights, so it doesn't control anything.</div>` : nothing}
 
       <section class="card chartcard">
         ${this.renderChart()}
@@ -704,7 +800,7 @@ export class AlSimPanel extends LitElement {
           </label>
           <span class="spacer"></span>
           <label class="inline preview ${this.preview}">
-            <input type="checkbox" .checked=${this.preview !== "off"} ?disabled=${!profile?.loaded || !profile?.lights.length} @change=${this.togglePreview} />
+            <input type="checkbox" .checked=${this.preview !== "off"} ?disabled=${Boolean(this.draft) || !profile?.loaded || !profile?.lights.length} @change=${this.togglePreview} />
             Preview on real lights
             <span class="tag">${this.preview === "active" ? "ON: lights follow the playhead" : this.preview === "starting" ? "starting…" : "off"}</span>
           </label>

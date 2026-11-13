@@ -1,5 +1,10 @@
 # Fork changelog
 
+## 1.32.0-homeops.5
+
+- Panel: every option label has a help tooltip (hover, keyboard focus or tap on the ⓘ) in plain
+  language. Covers all 42 options; a unit test fails if one is missing. Frontend only.
+
 ## 1.32.0-homeops.4
 
 - Panel: **+ New profile**. A draft starts as a copy of the selected profile's curve with its

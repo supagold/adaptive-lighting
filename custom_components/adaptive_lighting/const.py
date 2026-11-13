@@ -186,10 +186,7 @@ DOCS[CONF_MAX_SUNSET_TIME] = (
 
 CONF_SCHEDULE = "schedule"
 DOCS[CONF_SCHEDULE] = (
-    "Fade between points at times you choose instead of following sunrise and sunset. "
-    'JSON list like `[{"at": "08:00", "brightness": 100}, {"at": "sunset+30m", "brightness": 50}]`; '
-    "`at` is a clock time or `sunrise`/`sunset` with an optional offset; `color_temp` is optional. "
-    "Replaces the brightness mode and min/max brightness while set. 📅"
+    "Fade between points at times you choose instead of following sunrise and sunset. A JSON list of points, each with `at`, `brightness` (1-100) and optional `color_temp`; `at` is a clock time like `08:00` or `sunrise`/`sunset` with an optional offset like `sunset+30m`. Replaces the brightness mode and min/max brightness while set. 📅"
 )
 
 CONF_BRIGHTNESS_MODE, DEFAULT_BRIGHTNESS_MODE = "brightness_mode", "default"

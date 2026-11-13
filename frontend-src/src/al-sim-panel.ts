@@ -16,6 +16,7 @@ import { buildPayload, changes, coerce, parseForm, savedValues, show, type Field
 import { asLightList, emptyMix, lightRows, previewLights, pruneMix, sameLights, toggle, type LightRow, type Mix } from "./lib/lights";
 import { ensureHaSelector, openMoreInfo } from "./lib/ha-elements";
 import { createProfile, sharedLights } from "./lib/create";
+import { helpFor } from "./lib/help";
 
 interface Hass {
   connection: {
@@ -649,6 +650,14 @@ export class AlSimPanel extends LitElement {
   }
 
   // ------------------------------------------------------------ options UI
+  /** Option name with a help tooltip (hover, keyboard focus or tap on the ⓘ). */
+  private renderLabel(name: string, label: string, changed: boolean) {
+    const tip = helpFor(name);
+    return html`<span class="lbl">${label}${changed ? html` <em>(edited)</em>` : nothing}${tip
+      ? html` <span class="help" tabindex="0" role="note" aria-label="${label}: ${tip}" data-tip=${tip}>ⓘ</span>`
+      : nothing}</span>`;
+  }
+
   private renderField(f: Field) {
     const value = f.name in this.edited ? this.edited[f.name] : f.value;
     const changed = f.name in this.overrides;
@@ -659,7 +668,7 @@ export class AlSimPanel extends LitElement {
       // Not inside a <label>: a label would steal clicks from the picker's own inputs.
       return html`
         <div class="field wide ${changed ? "changed" : ""} ${err ? "error" : ""}">
-          <span>${label}${changed ? html` <em>(edited)</em>` : nothing}</span>
+          ${this.renderLabel(f.name, label, changed)}
           <ha-selector .hass=${this.hass} .selector=${{ entity: { domain: "light", multiple: true } }}
             .value=${asLightList(value)} @value-changed=${(e: CustomEvent) => this.onLights(asLightList(e.detail.value))}></ha-selector>
           ${err ? html`<span class="warn">⚠ ${err}</span>` : nothing}
@@ -681,7 +690,7 @@ export class AlSimPanel extends LitElement {
     }
     return html`
       <label class="field ${f.name === "lights" ? "wide" : ""} ${changed ? "changed" : ""} ${err ? "error" : ""}">
-        <span>${label}${changed ? html` <em>(edited)</em>` : nothing}</span>
+        ${this.renderLabel(f.name, label, changed)}
         ${input}
         ${f.name === "lights" && this.picker === "failed"
           ? html`<span class="muted small">Home Assistant's light picker didn't load; type entity ids separated by commas.</span>`
@@ -883,6 +892,14 @@ export class AlSimPanel extends LitElement {
     .field.changed input, .field.changed select { border-color: var(--primary-color); border-width: 2px; }
     .field.error input, .field.error select { border-color: var(--warning-color, #ffa600); border-width: 2px; }
     .field em { font-style: normal; font-weight: 400; }
+    .lbl { position: relative; }
+    .help { display: inline-block; cursor: help; color: var(--secondary-text-color); font-size: 0.95em; text-transform: none; outline: none; }
+    .help:hover, .help:focus-visible { color: var(--primary-color); }
+    .help::after { content: attr(data-tip); display: none; position: absolute; z-index: 5; left: 0; top: 1.6em;
+      width: max-content; max-width: min(320px, 80vw); padding: 8px 10px; border-radius: 8px; font-size: 0.9em; font-weight: 400;
+      line-height: 1.35; text-transform: none; white-space: normal; background: var(--primary-text-color); color: var(--card-background-color, #fff);
+      box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+    .help:hover::after, .help:focus::after { display: block; }
     .warn { color: var(--warning-color, #b36b00); font-size: 0.85em; }
     details { margin: 4px 0 12px; }
     summary { cursor: pointer; color: var(--primary-color); margin-bottom: 10px; text-transform: capitalize; }

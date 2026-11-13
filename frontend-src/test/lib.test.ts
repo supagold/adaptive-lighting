@@ -306,3 +306,12 @@ describe("lights: mute/solo and the edited list", () => {
     expect(sameLights([A], [A, B])).toBe(false);
   });
 });
+
+import { HELP, helpFor } from "../src/lib/help";
+describe("option help", () => {
+  it("covers every option the form can show", () => {
+    const names = ["lights","interval","transition","min_brightness","max_brightness","min_color_temp","max_color_temp","sleep_brightness","sleep_color_temp","initial_transition","prefer_rgb_color","sleep_rgb_or_color_temp","sleep_rgb_color","sleep_transition","transition_until_sleep","sunrise_time","min_sunrise_time","max_sunrise_time","sunrise_offset","sunset_time","min_sunset_time","max_sunset_time","sunset_offset","brightness_mode","brightness_mode_time_dark","brightness_mode_time_light","take_over_control","take_over_control_mode","detect_non_ha_changes","autoreset_control_seconds","only_once","adapt_only_on_bare_turn_on","manual_control_on_external_turn_on","reset_manual_control_on_sleep_mode_change","separate_turn_on_commands","send_split_delay","adapt_delay","skip_redundant_commands","intercept","multi_light_intercept","include_config_in_attributes","expand_light_groups"];
+    expect(names.filter((n) => !HELP[n])).toEqual([]);
+    expect(helpFor("nope")).toBe("");
+  });
+});

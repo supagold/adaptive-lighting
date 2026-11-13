@@ -197,7 +197,9 @@ def _jsonable(data: dict[str, Any]) -> dict[str, Any]:
             out[key] = value.total_seconds()
         elif isinstance(value, (dt.time, dt.datetime, dt.date)):
             out[key] = value.isoformat()
-        elif key == "schedule" and value:
+        elif (
+            key == "schedule" and value and not isinstance(value, str)
+        ):  # parsed tuple; "None" stays text
             out[key] = schedule_json(value)
         elif isinstance(value, tuple):
             out[key] = list(value)

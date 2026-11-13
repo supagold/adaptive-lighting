@@ -410,10 +410,11 @@ async def test_profiles_report_schedule_as_json_text(hass, hass_ws_client):
     assert isinstance(options[CONF_SCHEDULE], str) and options[
         CONF_SCHEDULE
     ].startswith("[")
-    # stored in canonical form (sunset+30m is written sunset+0:30)
+    # stored options are what was saved; resolved options are canonical JSON text
     assert json.loads(
-        resp["result"]["profiles"][0]["stored_options"][CONF_SCHEDULE],
-    ) == json.loads(SCHEDULE.replace("sunset+30m", "sunset+0:30"))
+        resp["result"]["profiles"][0]["stored_options"][CONF_SCHEDULE]
+    ) == json.loads(SCHEDULE)
+    assert "sunset+0:30" in options[CONF_SCHEDULE]
 
 
 async def test_no_schedule_means_empty_points(hass, hass_ws_client):
@@ -425,3 +426,12 @@ async def test_no_schedule_means_empty_points(hass, hass_ws_client):
         {"type": "adaptive_lighting/sim/curve", "entry_id": entry.entry_id},
     )
     assert resp["result"]["schedule"] == []
+
+
+async def test_profiles_with_schedule_none_text_still_list(hass, hass_ws_client):
+    """The options flow stores 'None' for an unset schedule; listing must not choke on it."""
+    await setup_lights(hass)
+    await _profile(hass, "N", {CONF_SCHEDULE: "None"})
+    resp = await _ws(hass, hass_ws_client, {"type": "adaptive_lighting/sim/profiles"})
+    assert resp["success"], resp
+    assert resp["result"]["profiles"][0]["stored_options"][CONF_SCHEDULE] == "None"

@@ -173,7 +173,9 @@ def sun_events(hass: HomeAssistant, resolved: Resolved, day: dt.date) -> dict[st
 
 
 def schedule_points(
-    hass: HomeAssistant, resolved: Resolved, day: dt.date,
+    hass: HomeAssistant,
+    resolved: Resolved,
+    day: dt.date,
 ) -> list[dict[str, Any]]:
     """The schedule's points on ``day`` (empty without a schedule), in time order."""
     schedule = resolved.settings.schedule

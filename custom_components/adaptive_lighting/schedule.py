@@ -151,7 +151,10 @@ def schedule_json(value: Any) -> str:
 
 
 def _resolve(
-    k: Keyframe, day: datetime.date, sun: _Sun, tz: datetime.tzinfo,
+    k: Keyframe,
+    day: datetime.date,
+    sun: _Sun,
+    tz: datetime.tzinfo,
 ) -> datetime.datetime:
     if k.anchor == "sunrise":
         return sun.sunrise(day) + k.offset

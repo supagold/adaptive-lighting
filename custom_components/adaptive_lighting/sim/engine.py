@@ -172,6 +172,35 @@ def sun_events(hass: HomeAssistant, resolved: Resolved, day: dt.date) -> dict[st
     }
 
 
+def schedule_points(
+    hass: HomeAssistant, resolved: Resolved, day: dt.date,
+) -> list[dict[str, Any]]:
+    """The schedule's points on ``day`` (empty without a schedule), in time order."""
+    schedule = resolved.settings.schedule
+    if not schedule:
+        return []
+    tz = zoneinfo.ZoneInfo(hass.config.time_zone)
+    sun = resolved.settings.sun
+    out = []
+    for key in schedule:
+        if key.anchor == "sunrise":
+            when = sun.sunrise(day) + key.offset
+        elif key.anchor == "sunset":
+            when = sun.sunset(day) + key.offset
+        else:
+            when = dt.datetime.combine(day, key.at, tzinfo=tz)
+        out.append(
+            {
+                "at": key.text(),
+                "t": when.astimezone(tz).isoformat(),
+                "brightness": key.brightness,
+                "color_temp": key.color_temp,
+                "anchor": key.anchor,
+            },
+        )
+    return sorted(out, key=lambda p: p["t"])
+
+
 def point(
     hass: HomeAssistant,
     resolved: Resolved,

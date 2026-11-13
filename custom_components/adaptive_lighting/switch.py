@@ -118,6 +118,7 @@ from .const import (
     CONF_ONLY_ONCE,
     CONF_PREFER_RGB_COLOR,
     CONF_RESET_MANUAL_CONTROL_ON_SLEEP_MODE_CHANGE,
+    CONF_SCHEDULE,
     CONF_SEND_SPLIT_DELAY,
     CONF_SEPARATE_TURN_ON_COMMANDS,
     CONF_SKIP_REDUNDANT_COMMANDS,
@@ -729,6 +730,7 @@ def build_sun_light_settings(
         brightness_mode_time_dark=data[CONF_BRIGHTNESS_MODE_TIME_DARK],
         brightness_mode_time_light=data[CONF_BRIGHTNESS_MODE_TIME_LIGHT],
         timezone=zoneinfo.ZoneInfo(hass.config.time_zone),
+        schedule=data[CONF_SCHEDULE],
     )
 
 

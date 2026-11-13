@@ -10,6 +10,8 @@ from homeassistant.components.light import VALID_TRANSITION
 from homeassistant.const import CONF_ENTITY_ID
 from homeassistant.helpers import selector
 
+from .schedule import parse_schedule, schedule_json
+
 ICON_MAIN = "mdi:theme-light-dark"
 ICON_BRIGHTNESS = "mdi:brightness-4"
 ICON_COLOR_TEMP = "mdi:sun-thermometer"
@@ -58,8 +60,7 @@ DOCS[CONF_INCLUDE_CONFIG_IN_ATTRIBUTES] = (
 
 CONF_INITIAL_TRANSITION, DEFAULT_INITIAL_TRANSITION = "initial_transition", 1
 DOCS[CONF_INITIAL_TRANSITION] = (
-    "Duration of the first transition when lights turn "
-    "from `off` to `on` in seconds. ⏲️"
+    "Duration of the first transition when lights turn from `off` to `on` in seconds. ⏲️"
 )
 
 CONF_SLEEP_TRANSITION, DEFAULT_SLEEP_TRANSITION = "sleep_transition", 1
@@ -162,8 +163,7 @@ DOCS[CONF_MIN_SUNRISE_TIME] = (
 
 CONF_MAX_SUNRISE_TIME = "max_sunrise_time"
 DOCS[CONF_MAX_SUNRISE_TIME] = (
-    "Set the latest virtual sunrise time (HH:MM:SS), allowing"
-    " for earlier sunrises. 🌅"
+    "Set the latest virtual sunrise time (HH:MM:SS), allowing for earlier sunrises. 🌅"
 )
 
 CONF_SUNSET_OFFSET, DEFAULT_SUNSET_OFFSET = "sunset_offset", 0
@@ -182,6 +182,14 @@ DOCS[CONF_MIN_SUNSET_TIME] = (
 CONF_MAX_SUNSET_TIME = "max_sunset_time"
 DOCS[CONF_MAX_SUNSET_TIME] = (
     "Set the latest virtual sunset time (HH:MM:SS), allowing for earlier sunsets. 🌇"
+)
+
+CONF_SCHEDULE = "schedule"
+DOCS[CONF_SCHEDULE] = (
+    "Fade between points at times you choose instead of following sunrise and sunset. "
+    'JSON list like `[{"at": "08:00", "brightness": 100}, {"at": "sunset+30m", "brightness": 50}]`; '
+    "`at` is a clock time or `sunrise`/`sunset` with an optional offset; `color_temp` is optional. "
+    "Replaces the brightness mode and min/max brightness while set. 📅"
 )
 
 CONF_BRIGHTNESS_MODE, DEFAULT_BRIGHTNESS_MODE = "brightness_mode", "default"
@@ -394,6 +402,7 @@ VALIDATION_TUPLES: list[tuple[str, Any, Any]] = [
     (CONF_MIN_SUNRISE_TIME, NONE_STR, str),
     (CONF_MAX_SUNRISE_TIME, NONE_STR, str),
     (CONF_SUNRISE_OFFSET, DEFAULT_SUNRISE_OFFSET, int),
+    (CONF_SCHEDULE, NONE_STR, str),
     (CONF_SUNSET_TIME, NONE_STR, str),
     (CONF_MIN_SUNSET_TIME, NONE_STR, str),
     (CONF_MAX_SUNSET_TIME, NONE_STR, str),
@@ -481,6 +490,7 @@ EXTRA_VALIDATION: dict[str, tuple[Any, Any]] = {
     CONF_MAX_SUNSET_TIME: (cv.time, str),
     CONF_BRIGHTNESS_MODE_TIME_LIGHT: (cv.time_period, timedelta_as_int),
     CONF_BRIGHTNESS_MODE_TIME_DARK: (cv.time_period, timedelta_as_int),
+    CONF_SCHEDULE: (parse_schedule, schedule_json),
 }
 
 

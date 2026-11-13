@@ -6,6 +6,7 @@ integration's own switch computes. Tests compare against a live AdaptiveSwitch's
 """
 
 import datetime as dt
+import json
 import zoneinfo
 
 import pytest
@@ -22,6 +23,7 @@ from homeassistant.components.adaptive_lighting.const import (
     CONF_MIN_COLOR_TEMP,
     CONF_NAME,
     CONF_PREFER_RGB_COLOR,
+    CONF_SCHEDULE,
     CONF_SLEEP_RGB_COLOR,
     CONF_SLEEP_RGB_OR_COLOR_TEMP,
     CONF_SUNSET_TIME,
@@ -199,6 +201,8 @@ async def test_sample_count_follows_local_day_length(hass, hass_ws_client, day, 
         ({CONF_SUNSET_TIME: "25:99"}, CONF_SUNSET_TIME),
         ({CONF_BRIGHTNESS_MODE: "cubic"}, CONF_BRIGHTNESS_MODE),
         ({CONF_PREFER_RGB_COLOR: "yes"}, CONF_PREFER_RGB_COLOR),
+        ({CONF_SCHEDULE: "not json"}, CONF_SCHEDULE),
+        ({CONF_SCHEDULE: '[{"at":"08:00","brightness":50}]'}, CONF_SCHEDULE),
     ],
 )
 async def test_invalid_overrides_report_the_field(
@@ -351,3 +355,73 @@ async def test_commands_registered_once_with_many_entries(hass, hass_ws_client):
     assert resp["success"]
     assert len(resp["result"]["profiles"]) == 3
     assert DOMAIN in hass.data
+
+
+SCHEDULE = (
+    '[{"at":"08:00","brightness":100},{"at":"17:00","brightness":100},'
+    '{"at":"sunset+30m","brightness":50},{"at":"21:30","brightness":10},{"at":"06:00","brightness":10}]'
+)
+
+
+@pytest.mark.parametrize("day", DATES)
+@pytest.mark.parametrize("is_sleep", [False, True])
+async def test_schedule_curve_equals_live_switch(hass, hass_ws_client, day, is_sleep):
+    """A schedule saved on a profile and a schedule sent as an override give the switch's values."""
+    await setup_lights(hass)
+    entry_a, _ = await _profile(hass, "A", {})
+    entry_b, switch_b = await _profile(hass, "B", {CONF_SCHEDULE: SCHEDULE})
+    saved = await _ws(
+        hass,
+        hass_ws_client,
+        {
+            "type": "adaptive_lighting/sim/curve",
+            "entry_id": entry_b.entry_id,
+            "date": day.isoformat(),
+            "step_min": 15,
+            "sleep": is_sleep,
+        },
+    )
+    over = await _ws(
+        hass,
+        hass_ws_client,
+        {
+            "type": "adaptive_lighting/sim/curve",
+            "entry_id": entry_a.entry_id,
+            "overrides": {CONF_SCHEDULE: SCHEDULE},
+            "date": day.isoformat(),
+            "step_min": 15,
+            "sleep": is_sleep,
+        },
+    )
+    assert saved["success"] and over["success"], (saved, over)
+    _assert_matches_switch(hass, saved["result"]["samples"], switch_b, is_sleep)
+    _assert_matches_switch(hass, over["result"]["samples"], switch_b, is_sleep)
+    points = over["result"]["schedule"]
+    assert [p["at"] for p in points].count("sunset+0:30") == 1
+    assert [p["brightness"] for p in points if p["at"] == "21:30"] == [10]
+    assert points == sorted(points, key=lambda p: p["t"])
+
+
+async def test_profiles_report_schedule_as_json_text(hass, hass_ws_client):
+    await setup_lights(hass)
+    await _profile(hass, "S", {CONF_SCHEDULE: SCHEDULE})
+    resp = await _ws(hass, hass_ws_client, {"type": "adaptive_lighting/sim/profiles"})
+    options = resp["result"]["profiles"][0]["options"]
+    assert isinstance(options[CONF_SCHEDULE], str) and options[
+        CONF_SCHEDULE
+    ].startswith("[")
+    # stored in canonical form (sunset+30m is written sunset+0:30)
+    assert json.loads(
+        resp["result"]["profiles"][0]["stored_options"][CONF_SCHEDULE],
+    ) == json.loads(SCHEDULE.replace("sunset+30m", "sunset+0:30"))
+
+
+async def test_no_schedule_means_empty_points(hass, hass_ws_client):
+    await setup_lights(hass)
+    entry, _ = await _profile(hass, "P", {})
+    resp = await _ws(
+        hass,
+        hass_ws_client,
+        {"type": "adaptive_lighting/sim/curve", "entry_id": entry.entry_id},
+    )
+    assert resp["result"]["schedule"] == []

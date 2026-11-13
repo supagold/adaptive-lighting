@@ -20,6 +20,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 
 from ..const import CONF_LIGHTS, DOMAIN
+from ..schedule import schedule_json
 from ..switch import _supported_features
 from . import engine, preview
 
@@ -140,12 +141,13 @@ def ws_curve(
     try:
         samples = engine.sample_day(hass, resolved, day, msg["step_min"], msg["sleep"])
         sun = engine.sun_events(hass, resolved, day)
+        schedule = engine.schedule_points(hass, resolved, day)
     except (engine.SimulationError, ValueError) as err:
         connection.send_error(msg["id"], ERR_INVALID, str(err))
         return
     connection.send_result(
         msg["id"],
-        {"date": day.isoformat(), "sun": sun, "samples": samples},
+        {"date": day.isoformat(), "sun": sun, "samples": samples, "schedule": schedule},
     )
 
 
@@ -195,6 +197,8 @@ def _jsonable(data: dict[str, Any]) -> dict[str, Any]:
             out[key] = value.total_seconds()
         elif isinstance(value, (dt.time, dt.datetime, dt.date)):
             out[key] = value.isoformat()
+        elif key == "schedule" and value:
+            out[key] = schedule_json(value)
         elif isinstance(value, tuple):
             out[key] = list(value)
         else:

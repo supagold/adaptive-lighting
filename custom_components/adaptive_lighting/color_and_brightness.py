@@ -20,6 +20,8 @@ from homeassistant.util.color import (
     color_xy_to_hs,
 )
 
+from .schedule import Keyframe, values_at
+
 
 class SunEvent(str, Enum):
     """A set of sun events that happen during a day."""
@@ -298,6 +300,8 @@ class SunLightSettings:
     sunrise_offset: datetime.timedelta = datetime.timedelta()
     sunset_offset: datetime.timedelta = datetime.timedelta()
     timezone: datetime.tzinfo = UTC
+    # homeops fork: optional keyframe schedule; when set it replaces the sun-based curve.
+    schedule: tuple[Keyframe, ...] | None = None
 
     @cached_property
     def sun(self) -> SunEvents:
@@ -384,6 +388,8 @@ class SunLightSettings:
         """Calculate the brightness in %."""
         if is_sleep:
             return self.sleep_brightness
+        if self.schedule:
+            return values_at(self.schedule, self.sun, self.timezone, dt)[0]
         assert self.brightness_mode in ("default", "linear", "tanh")
         if self.brightness_mode == "default":
             return self._brightness_pct_default(dt)
@@ -423,7 +429,8 @@ class SunLightSettings:
             color_temp_kelvin = self.sleep_color_temp
             rgb_color = self.sleep_rgb_color
         elif (
-            self.sleep_rgb_or_color_temp == "rgb_color"
+            not self.schedule
+            and self.sleep_rgb_or_color_temp == "rgb_color"
             and self.adapt_until_sleep
             and sun_position < 0
         ):
@@ -440,7 +447,12 @@ class SunLightSettings:
             color_temp_kelvin = self.color_temp_kelvin(sun_position)
             force_rgb_color = True
         else:
-            color_temp_kelvin = self.color_temp_kelvin(sun_position)
+            scheduled_ct = (
+                values_at(self.schedule, self.sun, self.timezone, dt)[1]
+                if self.schedule
+                else None
+            )
+            color_temp_kelvin = scheduled_ct or self.color_temp_kelvin(sun_position)
             r, g, b = color_temperature_to_rgb(color_temp_kelvin)
             rgb_color = (round(r), round(g), round(b))
         # backwards compatibility for versions < 1.3.1 - see #403

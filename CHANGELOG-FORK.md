@@ -1,5 +1,14 @@
 # Fork changelog
 
+## 1.32.0-homeops.4
+
+- Panel: **+ New profile**. A draft starts as a copy of the selected profile's curve with its
+  lights cleared. Pick lights with HA's light picker, set the curve, name it; the chart updates
+  live and nothing exists until **Create**. Create runs HA's config flow (empty entry), then the
+  options flow with every option. If the options step fails the half-made entry is deleted.
+  A duplicate name is refused. A light already controlled by another profile is flagged.
+  Frontend only; no new websocket commands.
+
 ## 1.32.0-homeops.3
 
 - Panel: the Lights option uses Home Assistant's own light picker (search, add, remove), with

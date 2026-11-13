@@ -1,5 +1,24 @@
 # Fork changelog
 
+## 1.32.0-homeops.6
+
+- **Schedule curve.** New option `schedule` (JSON text): a list of points `{"at", "brightness", "color_temp"?}`.
+  `at` is a clock time (`"08:00"`) or a sun anchor (`"sunrise"`, `"sunset+30m"`). Brightness fades
+  linearly between points and wraps over midnight, so any number of levels at any times works.
+  While set it replaces `brightness_mode` and the min/max brightness; a point's `color_temp` is
+  used when both neighbours have one, otherwise the sun-based colour. Sleep mode still wins.
+  Profiles without a schedule behave exactly as before. New module `schedule.py`; the curve code
+  in `color_and_brightness.py` has one new branch. 31 new tests (565 total pass).
+- Simulator `curve` result includes `schedule` (each point with its resolved time that day).
+- Panel: **Schedule** card ("Use a schedule" seeds four points from the current curve). Drag a dot
+  on the chart: left/right changes the time in 5-minute steps (Shift = 1 minute), up/down the
+  brightness, with a tooltip showing the time and % while dragging. A diamond is tied to
+  sunrise or sunset. Rows below edit the same points (clock time or sunrise/sunset with offset,
+  brightness, optional colour temperature), add a point at the playhead, remove a point
+  (minimum two). Keyboard: arrows move a focused dot, Delete removes it.
+  The save dialog summarises schedule changes.
+- Fix (found by the browser check): listing profiles failed when the stored schedule was the text "None".
+
 ## 1.32.0-homeops.5
 
 - Panel: every option label has a help tooltip (hover, keyboard focus or tap on the ⓘ) in plain

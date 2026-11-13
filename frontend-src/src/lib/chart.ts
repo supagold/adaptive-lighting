@@ -41,3 +41,10 @@ export function hourTicks(total: number, step = 3): number[] {
   for (let m = 0; m <= total; m += step * 60) ticks.push(m);
   return ticks;
 }
+
+/** Inverse of yForPct: the brightness % at a y position (clamped to 1-100). */
+export function pctForY(y: number, box: ChartBox): number {
+  const span = box.height - box.padTop - box.padBottom;
+  const p = (1 - (y - box.padTop) / span) * 100;
+  return Math.min(Math.max(Math.round(p), 1), 100);
+}

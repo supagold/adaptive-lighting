@@ -17,6 +17,7 @@ export const HELP: Record<string, string> = {
   sleep_rgb_color: "RGB colour used in Sleep mode, as R,G,B from 0 to 255 (only if sleep uses RGB).",
   sleep_transition: "Fade time, in seconds, when Sleep mode is switched on or off.",
   transition_until_sleep: "Treat the sleep settings as the bottom of the curve: lights fade toward the sleep values after sunset instead of the minimums.",
+  schedule: "Your own fade points: a time and a brightness each, with the lamps fading in a straight line between them. Edit it in the Schedule card, by dragging the dots on the chart.",
   sunrise_time: "Fixed sunrise time (HH:MM:SS). Leave empty to follow the real sunrise.",
   min_sunrise_time: "Earliest the virtual sunrise may be (HH:MM:SS). Later real sunrises are used as they are.",
   max_sunrise_time: "Latest the virtual sunrise may be (HH:MM:SS). Earlier real sunrises are used as they are.",

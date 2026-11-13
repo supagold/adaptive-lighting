@@ -10,10 +10,19 @@ export interface Sample {
   force_rgb_color: boolean;
 }
 
+export interface SchedulePointInfo {
+  at: string;
+  t: string;
+  brightness: number;
+  color_temp: number | null;
+  anchor: string | null;
+}
+
 export interface Curve {
   date: string;
   sun: Record<string, string>;
   samples: Sample[];
+  schedule?: SchedulePointInfo[];
 }
 
 export interface LightInfo {

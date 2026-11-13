@@ -9,8 +9,9 @@
 
 import { LitElement, css, html, nothing, svg, type PropertyValues } from "lit";
 import type { Curve, Errors, PerLight, Point, Profile } from "./lib/types";
+import { addPoint, describeAt, formatAt, minuteLabel, minuteOf, moveTime, parseAt, parseSchedule, removePoint, scheduleSummary, seedFromCurve, setAt, setBrightness, setColorTemp, toOption, type SchedulePoint } from "./lib/schedule";
 import { clock12, hourLabel12, isoForMinute, minuteForX, nearestIndex, snap, totalMinutes, xForMinute } from "./lib/time";
-import { brightnessPath, colorStops, hourTicks, yForPct, type ChartBox } from "./lib/chart";
+import { brightnessPath, colorStops, hourTicks, pctForY, yForPct, type ChartBox } from "./lib/chart";
 import { LatestThrottle, Playback } from "./lib/playback";
 import { buildPayload, changes, coerce, parseForm, savedValues, show, type Field, type Form } from "./lib/options";
 import { asLightList, emptyMix, lightRows, previewLights, pruneMix, sameLights, toggle, type LightRow, type Mix } from "./lib/lights";
@@ -59,6 +60,7 @@ export class AlSimPanel extends LitElement {
     mix: { state: true },
     picker: { state: true },
     draft: { state: true },
+    dragging: { state: true },
   };
 
   declare hass: Hass;
@@ -83,6 +85,7 @@ export class AlSimPanel extends LitElement {
   declare chartWidth: number;
   declare mix: Mix; // preview-only mute/solo; never saved
   declare picker: "loading" | "ready" | "failed"; // HA's light picker for the lights option
+  declare dragging: number | null; // index of the schedule point being dragged
   declare draft: { name: string } | null; // a new profile being designed; nothing exists until Create
 
   private playback: Playback;
@@ -124,6 +127,7 @@ export class AlSimPanel extends LitElement {
     this.mix = emptyMix();
     this.picker = "loading";
     this.draft = null;
+    this.dragging = null;
     this.playback = new Playback(1440, 30_000, (m, playing) => {
       this.minute = m;
       this.playing = playing;
@@ -468,6 +472,173 @@ export class AlSimPanel extends LitElement {
     return this.profiles.find((p) => p.entry_id === this.selected)?.title ?? "";
   }
 
+  // --------------------------------------------------------------- schedule
+  /** The schedule's points as edited (null = the profile follows the sun). */
+  private get schedule(): SchedulePoint[] | null {
+    const value = "schedule" in this.edited ? this.edited.schedule : this.form ? savedValues(this.form).schedule : null;
+    return parseSchedule(value);
+  }
+
+  /** Sunrise and sunset as minutes of the shown day, for placing sun-anchored points. */
+  private get sunMinutes(): { sunrise?: number; sunset?: number } {
+    const samples = this.curve?.samples ?? [];
+    if (!samples.length) return {};
+    const dayStart = Date.parse(samples[0].t);
+    const at = (iso?: string) => (iso ? (Date.parse(iso) - dayStart) / 60_000 : undefined);
+    return { sunrise: at(this.curve?.sun?.sunrise), sunset: at(this.curve?.sun?.sunset) };
+  }
+
+  private setSchedule(points: SchedulePoint[] | null): void {
+    this.edited = { ...this.edited, schedule: toOption(points) };
+    this.scheduleCurve();
+  }
+
+  private useSchedule(): void {
+    const samples = this.curve?.samples ?? [];
+    if (samples.length) this.setSchedule(seedFromCurve(samples));
+  }
+
+  private dragFromEvent(ev: PointerEvent): { minute: number; pct: number } {
+    const svgEl = (ev.currentTarget as SVGElement).ownerSVGElement as SVGSVGElement;
+    const rect = svgEl.getBoundingClientRect();
+    const box = this.box(this.playback.totalMinutes);
+    const x = ((ev.clientX - rect.left) / rect.width) * box.width;
+    const y = ((ev.clientY - rect.top) / rect.height) * box.height;
+    return { minute: minuteForX(x, box), pct: pctForY(y, box) };
+  }
+
+  private onHandleDown(i: number, ev: PointerEvent): void {
+    ev.stopPropagation();
+    ev.preventDefault();
+    (ev.currentTarget as SVGElement).setPointerCapture(ev.pointerId);
+    this.dragging = i;
+  }
+
+  private onHandleMove(i: number, ev: PointerEvent): void {
+    if (this.dragging !== i) return;
+    const pts = this.schedule;
+    if (!pts) return;
+    const { minute, pct } = this.dragFromEvent(ev);
+    this.setSchedule(setBrightness(moveTime(pts, i, minute, this.sunMinutes, ev.shiftKey ? 1 : 5), i, pct));
+  }
+
+  private onHandleUp(): void {
+    this.dragging = null;
+  }
+
+  private onHandleKey(i: number, ev: KeyboardEvent): void {
+    const pts = this.schedule;
+    if (!pts) return;
+    const here = minuteOf(pts[i], this.sunMinutes);
+    const step = ev.shiftKey ? 60 : 5;
+    if (ev.key === "ArrowLeft") this.setSchedule(moveTime(pts, i, here - step, this.sunMinutes));
+    else if (ev.key === "ArrowRight") this.setSchedule(moveTime(pts, i, here + step, this.sunMinutes));
+    else if (ev.key === "ArrowUp") this.setSchedule(setBrightness(pts, i, pts[i].brightness + (ev.shiftKey ? 10 : 1)));
+    else if (ev.key === "ArrowDown") this.setSchedule(setBrightness(pts, i, pts[i].brightness - (ev.shiftKey ? 10 : 1)));
+    else if (ev.key === "Delete" || ev.key === "Backspace") this.setSchedule(removePoint(pts, i));
+    else return;
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+
+  private addAtPlayhead(): void {
+    const pts = this.schedule;
+    if (!pts) return;
+    const sample = this.curve?.samples[nearestIndex(this.curve.samples, this.minute)];
+    this.setSchedule(addPoint(pts, this.minute, sample?.brightness_pct ?? 50));
+  }
+
+  private changeKind(i: number, kind: string): void {
+    const pts = this.schedule;
+    if (!pts) return;
+    const here = minuteOf(pts[i], this.sunMinutes);
+    const at = kind === "clock" ? formatAt({ kind: "clock", minutes: Math.min(Math.max(Math.round(here / 5) * 5, 0), 1435) }) : kind;
+    this.setSchedule(setAt(pts, i, at));
+  }
+
+  private showValue(key: string, v: unknown): string {
+    return key === "schedule" ? scheduleSummary(v) : show(v);
+  }
+
+  /** Handles drawn on the chart: a dot per point (a diamond when tied to sunrise or sunset). */
+  private renderHandles(box: ChartBox) {
+    const pts = this.schedule;
+    if (!pts) return nothing;
+    const sun = this.sunMinutes;
+    const drawn = pts.map((p, i) => {
+      const x = xForMinute(minuteOf(p, sun), box);
+      const y = yForPct(p.brightness, box);
+      const anchored = parseAt(p.at)?.kind === "sun";
+      const label = `${minuteLabel(minuteOf(p, sun))}, ${p.brightness}%${anchored ? `, ${describeAt(p.at)}` : ""}`;
+      return { i, p, x, y, anchored, label };
+    });
+    const dragged = this.dragging !== null ? drawn.find((d) => d.i === this.dragging) : undefined;
+    return svg`
+      ${drawn.map(
+        (d) => svg`
+          <g class="handle ${this.dragging === d.i ? "active" : ""}" tabindex="0" role="slider" aria-label="Schedule point: ${d.label}. Arrow keys move it, Shift is bigger steps, Delete removes it."
+            aria-valuenow=${d.p.brightness} aria-valuemin="1" aria-valuemax="100" aria-valuetext=${d.label}
+            @pointerdown=${(e: PointerEvent) => this.onHandleDown(d.i, e)}
+            @pointermove=${(e: PointerEvent) => this.onHandleMove(d.i, e)}
+            @pointerup=${() => this.onHandleUp()} @pointercancel=${() => this.onHandleUp()}
+            @keydown=${(e: KeyboardEvent) => this.onHandleKey(d.i, e)}>
+            <title>${d.label}</title>
+            ${d.anchored
+              ? svg`<rect x=${d.x - 8} y=${d.y - 8} width="16" height="16" transform="rotate(45 ${d.x} ${d.y})"></rect>`
+              : svg`<circle cx=${d.x} cy=${d.y} r="8"></circle>`}
+            <circle class="hit" cx=${d.x} cy=${d.y} r="16"></circle>
+          </g>`,
+      )}
+      ${dragged ? this.renderTip(`${minuteLabel(minuteOf(dragged.p, sun))} · ${dragged.p.brightness}%${dragged.anchored ? ` · ${describeAt(dragged.p.at)}` : ""}`, dragged.x, dragged.y, box) : nothing}
+    `;
+  }
+
+  private renderSchedule() {
+    const pts = this.schedule;
+    if (!this.form) return nothing;
+    if (!pts)
+      return html`<section class="card">
+        <h2>Schedule</h2>
+        <p class="muted">This profile follows sunrise and sunset. A schedule lets you set your own times and levels instead, for example 100% from 8:00 to 17:00, 50% in the evening, 10% overnight. The lights fade in a straight line between points.</p>
+        <button class="primary" ?disabled=${!this.curve?.samples.length} @click=${this.useSchedule}>Use a schedule</button>
+      </section>`;
+    const sun = this.sunMinutes;
+    const order = pts.map((_, i) => i).sort((a, b) => minuteOf(pts[a], sun) - minuteOf(pts[b], sun));
+    return html`<section class="card">
+      <h2>Schedule</h2>
+      <p class="muted small">Drag a dot on the chart (left and right = time in 5-minute steps, hold Shift for 1 minute; up and down = brightness), or edit the rows. A diamond is tied to sunrise or sunset and follows it through the year. The schedule replaces the brightness mode and min/max brightness. Sleep mode still wins.</p>
+      <div class="sched">
+        <div class="schedhead"><span>When</span><span>Time</span><span>Brightness %</span><span>Colour K (optional)</span><span></span></div>
+        ${order.map((i) => {
+          const p = pts[i];
+          const at = parseAt(p.at);
+          const kind = at?.kind === "sun" ? at.anchor : "clock";
+          const when = at?.kind === "clock" ? `${String(Math.floor(at.minutes / 60)).padStart(2, "0")}:${String(at.minutes % 60).padStart(2, "0")}` : "";
+          return html`<div class="schedrow ${this.dragging === i ? "active" : ""}">
+            <select aria-label="Time type" @change=${(e: Event) => this.changeKind(i, (e.target as HTMLSelectElement).value)}>
+              <option value="clock" ?selected=${kind === "clock"}>Clock time</option>
+              <option value="sunrise" ?selected=${kind === "sunrise"}>Sunrise</option>
+              <option value="sunset" ?selected=${kind === "sunset"}>Sunset</option>
+            </select>
+            ${at?.kind === "sun"
+              ? html`<label class="inline">offset <input type="number" step="5" .value=${String(at.offset)} aria-label="Minutes after ${at.anchor} (negative = before)"
+                  @change=${(e: Event) => this.setSchedule(setAt(pts, i, formatAt({ kind: "sun", anchor: at.anchor, offset: Number((e.target as HTMLInputElement).value) || 0 })))} /> min</label>`
+              : html`<input type="time" step="300" .value=${when} aria-label="Time of day" @change=${(e: Event) => this.setSchedule(setAt(pts, i, (e.target as HTMLInputElement).value))} />`}
+            <input type="number" min="1" max="100" .value=${String(p.brightness)} aria-label="Brightness percent"
+              @change=${(e: Event) => this.setSchedule(setBrightness(pts, i, Number((e.target as HTMLInputElement).value)))} />
+            <input type="number" min="1000" max="10000" step="50" placeholder="sun-based" .value=${p.color_temp != null ? String(p.color_temp) : ""} aria-label="Colour temperature in Kelvin, optional"
+              @change=${(e: Event) => { const v = (e.target as HTMLInputElement).value; this.setSchedule(setColorTemp(pts, i, v === "" ? null : Number(v))); }} />
+            <button aria-label="Remove this point" title="Remove this point" ?disabled=${pts.length <= 2} @click=${() => this.setSchedule(removePoint(pts, i))}>✕</button>
+          </div>`;
+        })}
+      </div>
+      <div class="actions">
+        <button @click=${() => this.setSchedule(null)}>Back to sunrise/sunset</button>
+        <button class="primary" @click=${this.addAtPlayhead}>+ Add point at the playhead</button>
+      </div>
+    </section>`;
+  }
+
   // ------------------------------------------------------------------ chart
   private onChartPointer(ev: PointerEvent): void {
     if (ev.type === "pointermove" && ev.buttons === 0) return;
@@ -552,6 +723,7 @@ export class AlSimPanel extends LitElement {
         ${anyColour ? nothing : svg`<text class="axis" x=${box.padLeft + 8} y=${stripY + 13}>not used: these lights are dimmer-only</text>`}
         <line class="playhead" x1=${px} x2=${px} y1=${box.padTop} y2=${stripY + STRIP_H}></line>
         ${cur ? svg`<circle class="dot" cx=${px} cy=${yForPct(cur.brightness_pct, box)} r="6"></circle>` : nothing}
+        ${this.renderHandles(box)}
         ${cur ? this.renderTip(clock12(playheadIso), px, yForPct(cur.brightness_pct, box), box) : nothing}
       </svg>
     `;
@@ -659,6 +831,7 @@ export class AlSimPanel extends LitElement {
   }
 
   private renderField(f: Field) {
+    if (f.name === "schedule") return nothing; // edited in the Schedule card
     const value = f.name in this.edited ? this.edited[f.name] : f.value;
     const changed = f.name in this.overrides;
     const err = this.fieldErrors[f.name] ?? this.serverErrors[f.name];
@@ -738,7 +911,7 @@ export class AlSimPanel extends LitElement {
               <b>Create profile "${draft.name.trim()}"?</b>
               <table>
                 <tr><td>lights</td><td><b>${show(this.effectiveLights)}</b></td></tr>
-                ${Object.entries(pending).filter(([k]) => k !== "lights").map(([k, v]) => html`<tr><td>${k.replaceAll("_", " ")}</td><td>${show(saved[k])}</td><td>→</td><td><b>${show(v)}</b></td></tr>`)}
+                ${Object.entries(pending).filter(([k]) => k !== "lights").map(([k, v]) => html`<tr><td>${k.replaceAll("_", " ")}</td><td>${this.showValue(k, saved[k])}</td><td>→</td><td><b>${this.showValue(k, v)}</b></td></tr>`)}
               </table>
               <p class="muted small">All other options start as in ${this.profileTitle}.</p>
               <div class="actions">
@@ -765,7 +938,7 @@ export class AlSimPanel extends LitElement {
         ? html`<div class="confirm" role="dialog" aria-label="Confirm changes">
             <b>Save these changes to ${this.profileTitle}?</b>
             <table>
-              ${Object.entries(pending).map(([k, v]) => html`<tr><td>${k.replaceAll("_", " ")}</td><td>${show(saved[k])}</td><td>→</td><td><b>${show(v)}</b></td></tr>`)}
+              ${Object.entries(pending).map(([k, v]) => html`<tr><td>${k.replaceAll("_", " ")}</td><td>${this.showValue(k, saved[k])}</td><td>→</td><td><b>${this.showValue(k, v)}</b></td></tr>`)}
             </table>
             <div class="actions">
               <button @click=${() => (this.confirming = false)}>Cancel</button>
@@ -817,6 +990,7 @@ export class AlSimPanel extends LitElement {
       </section>
 
       <section class="card">${this.renderPoint()}</section>
+      ${this.renderSchedule()}
       <section class="card"><h2>Options</h2>${this.renderOptionsCard()}</section>
     `;
   }
@@ -892,6 +1066,19 @@ export class AlSimPanel extends LitElement {
     .field.changed input, .field.changed select { border-color: var(--primary-color); border-width: 2px; }
     .field.error input, .field.error select { border-color: var(--warning-color, #ffa600); border-width: 2px; }
     .field em { font-style: normal; font-weight: 400; }
+    .handle { cursor: grab; outline: none; }
+    .handle circle:not(.hit), .handle rect { fill: var(--card-background-color); stroke: var(--primary-color); stroke-width: 3; }
+    .handle .hit { fill: transparent; stroke: none; }
+    .handle:hover circle:not(.hit), .handle:hover rect, .handle:focus-visible circle:not(.hit), .handle:focus-visible rect, .handle.active circle:not(.hit), .handle.active rect { fill: var(--primary-color); }
+    .handle:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+    .handle.active { cursor: grabbing; }
+    .sched { display: grid; gap: 6px; margin-bottom: 12px; }
+    .schedhead, .schedrow { display: grid; grid-template-columns: minmax(110px, 1.2fr) minmax(130px, 1.4fr) minmax(90px, 1fr) minmax(120px, 1.2fr) 36px; gap: 8px; align-items: center; }
+    .schedhead { font-size: 0.8em; color: var(--secondary-text-color); }
+    .schedrow.active { outline: 2px solid var(--primary-color); outline-offset: 2px; border-radius: 6px; }
+    .schedrow input, .schedrow select { width: 100%; box-sizing: border-box; }
+    .schedrow label.inline { display: flex; gap: 4px; align-items: center; }
+    @media (max-width: 600px) { .schedhead { display: none; } .schedrow { grid-template-columns: 1fr 1fr; } }
     .lbl { position: relative; }
     .help { display: inline-block; cursor: help; color: var(--secondary-text-color); font-size: 0.95em; text-transform: none; outline: none; }
     .help:hover, .help:focus-visible { color: var(--primary-color); }

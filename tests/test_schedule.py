@@ -85,27 +85,37 @@ def test_levels_and_fades():
 def test_wraps_over_midnight_and_across_days():
     s = settings('[{"at":"22:00","brightness":80},{"at":"02:00","brightness":20}]')
     assert pct(s, at(13, 0, 0)) == pytest.approx(50)  # halfway between 22:00 and 02:00
-    assert pct(s, at(13, 23, 0)) == pytest.approx(80 - 60 * 0.15625)  # smoothstep(0.25)
-    assert pct(s, at(13, 12, 0)) == pytest.approx(
-        20 + (80 - 20) * (10 / 20),
-    )  # 02:00 -> 22:00 rises
+    assert pct(s, at(13, 12, 0)) == pytest.approx(50)  # 02:00 -> 22:00 rises, halfway
+    assert pct(s, at(13, 0, 0)) == pct(s, at(14, 0, 0))  # same every day
 
 
-def test_fade_eases_in_and_out():
-    s = settings('[{"at":"00:00","brightness":10},{"at":"10:00","brightness":90}]')
-    assert pct(s, at(13, 1, 0)) == pytest.approx(10 + 80 * 0.028)  # slow start
-    assert pct(s, at(13, 5, 0)) == pytest.approx(50)  # linear at the midpoint
-    assert pct(s, at(13, 9, 0)) == pytest.approx(10 + 80 * 0.972)  # slow finish
-    samples = [pct(s, at(13, h, m)) for h in range(10) for m in (0, 30)]
-    assert samples == sorted(samples)  # monotonic: never overshoots a point
+def test_corners_are_rounded_not_hit_exactly():
+    s = settings('[{"at":"06:00","brightness":10},{"at":"08:00","brightness":100},{"at":"17:00","brightness":100}]')
+    # 08:00 is a corner: the straight line would read 100, the rounded curve is a bit lower
+    assert 85 < pct(s, at(13, 8, 0)) < 97
+    assert pct(s, at(13, 9, 0)) == pytest.approx(100)  # an hour later it has arrived
+    assert pct(s, at(13, 12, 0)) == pytest.approx(100)  # flat stretch stays flat
+    assert pct(s, at(13, 7, 0)) == pytest.approx(55)  # symmetric: midpoint unchanged
+
+
+def test_curve_never_overshoots_the_schedule_levels():
+    s = settings(
+        '[{"at":"06:00","brightness":10},{"at":"08:00","brightness":100},'
+        '{"at":"17:00","brightness":100},{"at":"18:00","brightness":50},'
+        '{"at":"20:30","brightness":50},{"at":"21:30","brightness":10}]',
+    )
+    samples = [pct(s, at(13, h, m)) for h in range(24) for m in (0, 15, 30, 45)]
+    assert min(samples) >= 10 - 1e-9
+    assert max(samples) <= 100 + 1e-9
+    assert all(abs(b - a) < 15 for a, b in zip(samples, samples[1:]))  # no jumps
 
 
 def test_sun_anchor_with_offset_follows_sunset():
     s = settings('[{"at":"06:00","brightness":10},{"at":"sunset+30m","brightness":90}]')
     sunset = s.sun.sunset(dt.date(2026, 11, 13)) + dt.timedelta(minutes=30)
-    assert pct(s, sunset) == pytest.approx(90)
+    assert 80 < pct(s, sunset) <= 90  # the corner is rounded
     s_summer = s.sun.sunset(dt.date(2026, 6, 21)) + dt.timedelta(minutes=30)
-    assert pct(s, s_summer) == pytest.approx(90)  # the anchor moves with the date
+    assert 80 < pct(s, s_summer) <= 90  # the anchor moves with the date
 
 
 def test_sleep_wins_and_sun_based_when_no_schedule():
@@ -136,11 +146,13 @@ def test_colour_temp_from_points_else_sun_curve():
 
 def test_dst_days_use_local_clock_times():
     s = settings('[{"at":"01:00","brightness":10},{"at":"12:00","brightness":60}]')
+    normal = pct(s, dt.datetime(2026, 11, 13, 12, 0, tzinfo=NY).astimezone(dt.UTC))
     assert (
-        pct(s, dt.datetime(2026, 11, 1, 12, 0, tzinfo=NY).astimezone(dt.UTC)) == 60
+        pct(s, dt.datetime(2026, 11, 1, 12, 0, tzinfo=NY).astimezone(dt.UTC))
+        == pytest.approx(normal, abs=0.5)
     )  # fall-back day
     assert (
-        pct(s, dt.datetime(2026, 3, 8, 12, 0, tzinfo=NY).astimezone(dt.UTC)) == 60
+        pct(s, dt.datetime(2026, 3, 8, 12, 0, tzinfo=NY).astimezone(dt.UTC)) == pytest.approx(normal, abs=0.5)
     )  # spring-forward day
 
 

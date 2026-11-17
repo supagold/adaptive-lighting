@@ -609,7 +609,7 @@ export class AlSimPanel extends LitElement {
     if (!pts)
       return html`<section class="card">
         <h2>Schedule</h2>
-        <p class="muted">This profile follows sunrise and sunset. A schedule lets you set your own times and levels instead, for example 100% from 8:00 to 17:00, 50% in the evening, 10% overnight. The lights fade smoothly between points, easing in and out.</p>
+        <p class="muted">This profile follows sunrise and sunset. A schedule lets you set your own times and levels instead, for example 100% from 8:00 to 17:00, 50% in the evening, 10% overnight. Every corner is rounded off, so the curve flows past the points rather than touching each one.</p>
         <button class="primary" ?disabled=${!this.curve?.samples.length} @click=${this.useSchedule}>Use a schedule</button>
       </section>`;
     const sun = this.sunMinutes;

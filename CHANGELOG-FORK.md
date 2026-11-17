@@ -1,5 +1,16 @@
 # Fork changelog
 
+## 1.32.0-homeops.8
+
+- **Schedule curve is rounded at every corner.** homeops.7's eased fades still looked like flat
+  stretches joined by steep slopes, and a spline through the points cannot do better (a curve
+  through flat 100 % / 50 % stretches must level off at each point or overshoot). The curve is
+  now the straight-line schedule smoothed with a raised-cosine moving average of
+  `SMOOTHING_MINUTES` = 60 either side (`schedule.py`). It passes near the points, not through
+  them (08:00 of the example schedule reads 93 %, 18:00 57 %, 21:30 16 %), flat stretches stay
+  flat, and it cannot overshoot the schedule's levels. Colour temperature keeps straight-line
+  fades. Panel text updated. Tests: 567 pass.
+
 ## 1.32.0-homeops.7
 
 - **Schedule fades are curved.** Brightness now eases in and out between points (smoothstep)

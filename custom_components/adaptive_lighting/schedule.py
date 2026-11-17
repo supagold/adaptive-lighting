@@ -3,8 +3,9 @@
 A schedule is a list of points ``{"at": ..., "brightness": 1-100, "color_temp": optional K}``.
 ``at`` is a clock time (``"08:00"``, ``"08:00:30"``) or a sun anchor (``"sunrise"``, ``"sunset"``,
 optionally with an offset such as ``"sunset+30m"``, ``"sunrise-1h"`` or ``"sunset+1:30"``). The
-brightness fades between neighbouring points along an ease-in/ease-out (smoothstep) curve, so each
-fade starts and ends gently and never overshoots a point, and wraps over midnight (the last point of a
+brightness fades in straight lines between points, then every corner is rounded off (a raised-cosine
+moving average of SMOOTHING_MINUTES either side, so the line passes near the points, not through them,
+and never overshoots) and wraps over midnight (the last point of a
 day fades to the first point of the next). Pure Python, no Home Assistant imports.
 """
 
@@ -13,6 +14,7 @@ from __future__ import annotations
 import bisect
 import datetime  # noqa: ICN001
 import json
+import math
 import re
 from dataclasses import dataclass
 from datetime import UTC, timedelta
@@ -21,6 +23,13 @@ from typing import Any, Protocol
 import voluptuous as vol
 
 MAX_POINTS = 64
+SMOOTHING_MINUTES = 60  # half-width of the rounding applied to every corner of the curve
+_STEP = 5
+_KERNEL: tuple[tuple[int, float], ...] = tuple(
+    (m, w / sum(1 + math.cos(math.pi * n / SMOOTHING_MINUTES) for n in range(-SMOOTHING_MINUTES, SMOOTHING_MINUTES + 1, _STEP)))
+    for m in range(-SMOOTHING_MINUTES, SMOOTHING_MINUTES + 1, _STEP)
+    for w in (1 + math.cos(math.pi * m / SMOOTHING_MINUTES),)
+)
 MIN_COLOR_TEMP = 1000
 MAX_COLOR_TEMP = 10000
 
@@ -178,13 +187,23 @@ def values_at(
         events.extend((_resolve(k, d, sun, tz), k) for k in points)
     events.sort(key=lambda e: e[0])
     times = [t for t, _ in events]
-    i = bisect.bisect_right(times, dt) - 1
-    i = min(max(i, 0), len(events) - 2)
-    (t0, k0), (t1, k1) = events[i], events[i + 1]
-    span = (t1 - t0).total_seconds()
-    f = 0.0 if span <= 0 else min(max((dt - t0).total_seconds() / span, 0.0), 1.0)
-    f = f * f * (3 - 2 * f)  # smoothstep: ease in/out, stays within [k0, k1]
-    brightness = k0.brightness + (k1.brightness - k0.brightness) * f
+
+    def segment(at: datetime.datetime) -> tuple[Keyframe, Keyframe, float]:
+        i = min(max(bisect.bisect_right(times, at) - 1, 0), len(events) - 2)
+        (t0, k0), (t1, k1) = events[i], events[i + 1]
+        span = (t1 - t0).total_seconds()
+        f = 0.0 if span <= 0 else min(max((at - t0).total_seconds() / span, 0.0), 1.0)
+        return k0, k1, f
+
+    def straight(at: datetime.datetime) -> float:
+        k0, k1, f = segment(at)
+        return k0.brightness + (k1.brightness - k0.brightness) * f
+
+    # The curve is the straight-line schedule rounded off with a raised-cosine moving average
+    # SMOOTHING_MINUTES either side. Weights are positive and sum to 1, so it can never overshoot
+    # the schedule's own levels; flat stretches stay flat and every corner becomes a smooth bend.
+    brightness = sum(w * straight(dt + timedelta(minutes=m)) for m, w in _KERNEL)
+    k0, k1, f = segment(dt)
     ct = None
     if k0.color_temp is not None and k1.color_temp is not None:
         ct = 5 * round((k0.color_temp + (k1.color_temp - k0.color_temp) * f) / 5)

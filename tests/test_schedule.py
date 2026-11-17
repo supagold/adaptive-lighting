@@ -85,10 +85,19 @@ def test_levels_and_fades():
 def test_wraps_over_midnight_and_across_days():
     s = settings('[{"at":"22:00","brightness":80},{"at":"02:00","brightness":20}]')
     assert pct(s, at(13, 0, 0)) == pytest.approx(50)  # halfway between 22:00 and 02:00
-    assert pct(s, at(13, 23, 0)) == pytest.approx(65)
+    assert pct(s, at(13, 23, 0)) == pytest.approx(80 - 60 * 0.15625)  # smoothstep(0.25)
     assert pct(s, at(13, 12, 0)) == pytest.approx(
         20 + (80 - 20) * (10 / 20),
     )  # 02:00 -> 22:00 rises
+
+
+def test_fade_eases_in_and_out():
+    s = settings('[{"at":"00:00","brightness":10},{"at":"10:00","brightness":90}]')
+    assert pct(s, at(13, 1, 0)) == pytest.approx(10 + 80 * 0.028)  # slow start
+    assert pct(s, at(13, 5, 0)) == pytest.approx(50)  # linear at the midpoint
+    assert pct(s, at(13, 9, 0)) == pytest.approx(10 + 80 * 0.972)  # slow finish
+    samples = [pct(s, at(13, h, m)) for h in range(10) for m in (0, 30)]
+    assert samples == sorted(samples)  # monotonic: never overshoots a point
 
 
 def test_sun_anchor_with_offset_follows_sunset():

@@ -3,7 +3,8 @@
 A schedule is a list of points ``{"at": ..., "brightness": 1-100, "color_temp": optional K}``.
 ``at`` is a clock time (``"08:00"``, ``"08:00:30"``) or a sun anchor (``"sunrise"``, ``"sunset"``,
 optionally with an offset such as ``"sunset+30m"``, ``"sunrise-1h"`` or ``"sunset+1:30"``). The
-brightness fades linearly between neighbouring points and wraps over midnight (the last point of a
+brightness fades between neighbouring points along an ease-in/ease-out (smoothstep) curve, so each
+fade starts and ends gently and never overshoots a point, and wraps over midnight (the last point of a
 day fades to the first point of the next). Pure Python, no Home Assistant imports.
 """
 
@@ -182,6 +183,7 @@ def values_at(
     (t0, k0), (t1, k1) = events[i], events[i + 1]
     span = (t1 - t0).total_seconds()
     f = 0.0 if span <= 0 else min(max((dt - t0).total_seconds() / span, 0.0), 1.0)
+    f = f * f * (3 - 2 * f)  # smoothstep: ease in/out, stays within [k0, k1]
     brightness = k0.brightness + (k1.brightness - k0.brightness) * f
     ct = None
     if k0.color_temp is not None and k1.color_temp is not None:

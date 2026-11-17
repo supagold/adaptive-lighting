@@ -516,14 +516,23 @@ export class AlSimPanel extends LitElement {
 
   private onHandleMove(i: number, ev: PointerEvent): void {
     if (this.dragging !== i) return;
+    // No button held: the release was missed (or a scroll moved the page under the cursor).
+    // End the drag instead of letting the point follow the mouse.
+    if (ev.buttons === 0) {
+      this.onHandleUp(ev);
+      return;
+    }
     const pts = this.schedule;
     if (!pts) return;
     const { minute, pct } = this.dragFromEvent(ev);
     this.setSchedule(setBrightness(moveTime(pts, i, minute, this.sunMinutes, ev.shiftKey ? 1 : 5), i, pct));
   }
 
-  private onHandleUp(): void {
+  private onHandleUp(ev?: Event): void {
     this.dragging = null;
+    // A mouse/touch press focuses the handle (tabindex=0); drop that focus so arrow keys and
+    // Page Down scroll the page instead of nudging the point. Keyboard users reach it with Tab.
+    (ev?.currentTarget as SVGElement | null)?.blur?.();
   }
 
   private onHandleKey(i: number, ev: KeyboardEvent): void {
@@ -580,7 +589,8 @@ export class AlSimPanel extends LitElement {
             aria-valuenow=${d.p.brightness} aria-valuemin="1" aria-valuemax="100" aria-valuetext=${d.label}
             @pointerdown=${(e: PointerEvent) => this.onHandleDown(d.i, e)}
             @pointermove=${(e: PointerEvent) => this.onHandleMove(d.i, e)}
-            @pointerup=${() => this.onHandleUp()} @pointercancel=${() => this.onHandleUp()}
+            @pointerup=${(e: PointerEvent) => this.onHandleUp(e)} @pointercancel=${(e: PointerEvent) => this.onHandleUp(e)}
+            @lostpointercapture=${(e: PointerEvent) => this.onHandleUp(e)}
             @keydown=${(e: KeyboardEvent) => this.onHandleKey(d.i, e)}>
             <title>${d.label}</title>
             ${d.anchored
@@ -599,7 +609,7 @@ export class AlSimPanel extends LitElement {
     if (!pts)
       return html`<section class="card">
         <h2>Schedule</h2>
-        <p class="muted">This profile follows sunrise and sunset. A schedule lets you set your own times and levels instead, for example 100% from 8:00 to 17:00, 50% in the evening, 10% overnight. The lights fade in a straight line between points.</p>
+        <p class="muted">This profile follows sunrise and sunset. A schedule lets you set your own times and levels instead, for example 100% from 8:00 to 17:00, 50% in the evening, 10% overnight. The lights fade smoothly between points, easing in and out.</p>
         <button class="primary" ?disabled=${!this.curve?.samples.length} @click=${this.useSchedule}>Use a schedule</button>
       </section>`;
     const sun = this.sunMinutes;

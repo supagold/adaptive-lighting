@@ -1,5 +1,17 @@
 # Fork changelog
 
+## 1.32.0-homeops.7
+
+- **Schedule fades are curved.** Brightness now eases in and out between points (smoothstep)
+  instead of a straight line: each fade starts and ends gently, passes the midpoint at the same
+  value as before, and never overshoots a point. Backend only (`schedule.py`); the panel chart
+  draws the backend's samples, so it shows the curve too. New test `test_fade_eases_in_and_out`
+  (566 pass).
+- Fix (panel): a point could keep following the mouse after it was clicked, so scrolling the
+  page changed the schedule. A drag now ends when no button is held, on `lostpointercapture`,
+  and the handle loses focus after a mouse/touch drag (arrow keys scroll the page again;
+  keyboard users still Tab to a point). Unsaved edits only: the saved schedule was never touched.
+
 ## 1.32.0-homeops.6
 
 - **Schedule curve.** New option `schedule` (JSON text): a list of points `{"at", "brightness", "color_temp"?}`.
